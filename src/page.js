@@ -247,44 +247,44 @@ body {
 </div>
 
 <script>
-const SAVE_API = 'https://gs-loc.apple.com/ils-settings/save';
-const PARSE_API = '/api/parse';
-const ELEV_API = 'https://api.open-meteo.com/v1/elevation';
-const FAV_KEY = 'ils_favorites';
-const LANG_KEY = 'ils_lang';
-let lat = 0, lon = 0;
-let selected = false;
-let elev = null, elevState = 'idle';
-let activeLon = null, activeLat = null, activeAcc = null, activeAlt = null;
+var SAVE_API = 'https://gs-loc.apple.com/ils-settings/save';
+var PARSE_API = '/api/parse';
+var ELEV_API = 'https://api.open-meteo.com/v1/elevation';
+var FAV_KEY = 'ils_favorites';
+var LANG_KEY = 'ils_lang';
+var lat = 0, lon = 0;
+var selected = false;
+var elev = null, elevState = 'idle';
+var activeLon = null, activeLat = null, activeAcc = null, activeAlt = null;
 
 function gcj02ToWgs84(lat, lon) {
-  const a = 6378245.0, ee = 0.00669342162296594323;
-  let dLat = transformLat(lon - 105.0, lat - 35.0);
-  let dLon = transformLon(lon - 105.0, lat - 35.0);
-  const radLat = lat / 180.0 * Math.PI;
-  let magic = Math.sin(radLat);
+  var a = 6378245.0, ee = 0.00669342162296594323;
+  var dLat = transformLat(lon - 105.0, lat - 35.0);
+  var dLon = transformLon(lon - 105.0, lat - 35.0);
+  var radLat = lat / 180.0 * Math.PI;
+  var magic = Math.sin(radLat);
   magic = 1 - ee * magic * magic;
-  const sqrtMagic = Math.sqrt(magic);
+  var sqrtMagic = Math.sqrt(magic);
   dLat = (dLat * 180.0) / ((a * (1 - ee)) / (magic * sqrtMagic) * Math.PI);
   dLon = (dLon * 180.0) / (a / sqrtMagic * Math.cos(radLat) * Math.PI);
   return { lat: lat - dLat, lon: lon - dLon };
 }
 function transformLat(x, y) {
-  let ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+  var ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
   ret += (20.0 * Math.sin(6.0 * x * Math.PI) + 20.0 * Math.sin(2.0 * x * Math.PI)) * 2.0 / 3.0;
   ret += (20.0 * Math.sin(y * Math.PI) + 40.0 * Math.sin(y / 3.0 * Math.PI)) * 2.0 / 3.0;
   ret += (160.0 * Math.sin(y / 12.0 * Math.PI) + 320 * Math.sin(y * Math.PI / 30.0)) * 2.0 / 3.0;
   return ret;
 }
 function transformLon(x, y) {
-  let ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+  var ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
   ret += (20.0 * Math.sin(6.0 * x * Math.PI) + 20.0 * Math.sin(2.0 * x * Math.PI)) * 2.0 / 3.0;
   ret += (20.0 * Math.sin(x * Math.PI) + 40.0 * Math.sin(x / 3.0 * Math.PI)) * 2.0 / 3.0;
   ret += (150.0 * Math.sin(x / 12.0 * Math.PI) + 300.0 * Math.sin(x / 30.0 * Math.PI)) * 2.0 / 3.0;
   return ret;
 }
 
-const I18N = {
+var I18N = {
   zh: {
     title: 'iOS 虚拟定位',
     layer_satellite: '卫星', layer_amap: '高德', layer_color: '彩色', layer_standard: '标准', layer_dark: '暗色',
@@ -353,15 +353,15 @@ const I18N = {
 
 function detectLang() {
   try {
-    const saved = localStorage.getItem(LANG_KEY);
+    var saved = localStorage.getItem(LANG_KEY);
     if (saved === 'zh' || saved === 'en') return saved;
   } catch(e) {}
   return 'zh';
 }
-let lang = detectLang();
+var lang = detectLang();
 
 function t(key) {
-  const v = I18N[lang][key];
+  var v = I18N[lang][key];
   if (typeof v === 'function') return v.apply(null, Array.prototype.slice.call(arguments, 1));
   return v === undefined ? key : v;
 }
@@ -385,8 +385,8 @@ function setLang(l) {
   applyI18n();
 }
 
-const map = L.map('map').setView([20, 0], 2);
-const tiles = {
+var map = L.map('map').setView([20, 0], 2);
+var tiles = {
   amap: L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', { subdomains: '1234', maxZoom: 18, attribution: 'Amap' }),
   satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18, attribution: 'Esri World Imagery' }),
   wgs84: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: 'OpenStreetMap' }),
@@ -395,7 +395,7 @@ const tiles = {
 };
 tiles.amap.addTo(map);
 
-let currentLayer = 'amap';
+var currentLayer = 'amap';
 function switchLayer(name) {
   if (tiles[currentLayer]) map.removeLayer(tiles[currentLayer]);
   tiles[name].addTo(map);
@@ -405,7 +405,7 @@ function switchLayer(name) {
   });
 }
 
-let marker = null;
+var marker = null;
 
 function setTarget(la, lo, fly) {
   if (fly === undefined) fly = true;
@@ -427,7 +427,7 @@ map.on('click', function(e) {
 function fetchElevation(la, lo) {
   elevState = 'loading';
   updateCoords();
-  fetch(`${ELEV_API}?latitude=${la.toFixed(6)}&longitude=${lo.toFixed(6)}`)
+  fetch(ELEV_API + '?latitude=' + la.toFixed(6) + '&longitude=' + lo.toFixed(6))
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data && data.elevation !== undefined && data.elevation !== null) {
@@ -440,8 +440,8 @@ function fetchElevation(la, lo) {
 }
 
 function updateCoords() {
-  const cEl = document.getElementById('coords');
-  const gEl = document.getElementById('coordGrid');
+  var cEl = document.getElementById('coords');
+  var gEl = document.getElementById('coordGrid');
   if (!selected) {
     cEl.style.display = 'block';
     gEl.style.display = 'none';
@@ -452,7 +452,7 @@ function updateCoords() {
   gEl.style.display = 'block';
   document.getElementById('cvLat').textContent = lat.toFixed(6);
   document.getElementById('cvLon').textContent = lon.toFixed(6);
-  const altIn = document.getElementById('altInput');
+  var altIn = document.getElementById('altInput');
   if (elevState === 'ok' && elev !== null) {
     altIn.value = elev;
   } else if (elevState === 'loading') {
@@ -467,7 +467,7 @@ function updateStatus() {
 }
 
 function toast(msg) {
-  const el = document.getElementById('toast');
+  var el = document.getElementById('toast');
   el.textContent = msg;
   el.classList.add('show');
   setTimeout(function() { el.classList.remove('show'); }, 3000);
@@ -475,16 +475,16 @@ function toast(msg) {
 
 function save() {
   if (!selected) return toast(t('pick_first'));
-  const btn = document.getElementById('saveBtn');
+  var btn = document.getElementById('saveBtn');
   btn.disabled = true;
   btn.textContent = t('saving');
 
-  const altVal = parseInt(document.getElementById('altInput').value) || (elev !== null ? elev : 0);
-  const hacc = parseInt(document.getElementById('haccInput').value) || 39;
-  const vacc = parseInt(document.getElementById('vaccInput').value) || 1000;
-  const jitter = parseInt(document.getElementById('jitterInput').value) || 0;
+  var altVal = parseInt(document.getElementById('altInput').value) || (elev !== null ? elev : 0);
+  var hacc = parseInt(document.getElementById('haccInput').value) || 39;
+  var vacc = parseInt(document.getElementById('vaccInput').value) || 1000;
+  var jitter = parseInt(document.getElementById('jitterInput').value) || 0;
 
-  const payload = {
+  var payload = {
     latitude: lat,
     longitude: lon,
     altitude: altVal,
@@ -540,12 +540,12 @@ function locateMe() {
 }
 
 function copyField(type, btn) {
-  let val = '';
+  var val = '';
   if (type === 'lat') val = lat.toFixed(6);
   if (type === 'lon') val = lon.toFixed(6);
   if (type === 'alt') val = document.getElementById('altInput').value || '0';
   navigator.clipboard.writeText(val).then(function() {
-    const orig = btn.textContent;
+    var orig = btn.textContent;
     btn.textContent = '✓';
     setTimeout(function() { btn.textContent = orig; }, 1500);
   });
@@ -553,11 +553,11 @@ function copyField(type, btn) {
 
 function copyParams(btn) {
   if (!selected) return toast(t('pick_first'));
-  const altVal = document.getElementById('altInput').value || '0';
-  const hacc = document.getElementById('haccInput').value || '39';
-  const vacc = document.getElementById('vaccInput').value || '1000';
-  const jitter = document.getElementById('jitterInput').value || '0';
-  const str = `lat=${lat.toFixed(6)}&lon=${lon.toFixed(6)}&alt=${altVal}&hacc=${hacc}&vacc=${vacc}&jitter=${jitter}`;
+  var altVal = document.getElementById('altInput').value || '0';
+  var hacc = document.getElementById('haccInput').value || '39';
+  var vacc = document.getElementById('vaccInput').value || '1000';
+  var jitter = document.getElementById('jitterInput').value || '0';
+  var str = 'lat=' + lat.toFixed(6) + '&lon=' + lon.toFixed(6) + '&alt=' + altVal + '&hacc=' + hacc + '&vacc=' + vacc + '&jitter=' + jitter;
   navigator.clipboard.writeText(str).then(function() { toast(t('copied', '参数字符串')); });
 }
 
@@ -571,7 +571,7 @@ function queryActive() {
         activeLat = data.latitude;
         activeLon = data.longitude;
         activeAlt = data.altitude;
-        document.getElementById('activeValue').textContent = `${activeLat.toFixed(6)}, ${activeLon.toFixed(6)} (${activeAlt || 0}m)`;
+        document.getElementById('activeValue').textContent = activeLat.toFixed(6) + ', ' + activeLon.toFixed(6) + ' (' + (activeAlt || 0) + 'm)';
       } else {
         document.getElementById('activeValue').textContent = t('no_saved');
       }
@@ -598,7 +598,7 @@ function saveFavs(list) {
 }
 function addFav() {
   if (!selected) return toast(t('pick_first'));
-  document.getElementById('favModalCoords').textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+  document.getElementById('favModalCoords').textContent = lat.toFixed(6) + ', ' + lon.toFixed(6);
   document.getElementById('favNameInput').value = '';
   document.getElementById('favModal').classList.add('show');
 }
@@ -606,9 +606,9 @@ function closeFavModal() {
   document.getElementById('favModal').classList.remove('show');
 }
 function confirmFav() {
-  const name = document.getElementById('favNameInput').value.trim();
+  var name = document.getElementById('favNameInput').value.trim();
   if (!name) return toast(t('enter_label'));
-  const list = getFavs();
+  var list = getFavs();
   list.push({ name: name, lat: lat, lon: lon, alt: document.getElementById('altInput').value || 0 });
   saveFavs(list);
   closeFavModal();
@@ -617,8 +617,8 @@ function confirmFav() {
 }
 function deleteFav(idx, e) {
   e.stopPropagation();
-  const list = getFavs();
-  const item = list.splice(idx, 1);
+  var list = getFavs();
+  var item = list.splice(idx, 1);
   saveFavs(list);
   renderFavs();
   if (item[0]) toast(t('deleted', item[0].name));
@@ -630,32 +630,30 @@ function clearAllFav() {
   toast(t('all_cleared'));
 }
 function renderFavs() {
-  const list = getFavs();
-  const el = document.getElementById('favList');
-  const clearBtn = document.getElementById('clearAllBtn');
+  var list = getFavs();
+  var el = document.getElementById('favList');
+  var clearBtn = document.getElementById('clearAllBtn');
   clearBtn.style.display = list.length ? 'block' : 'none';
   if (!list.length) {
-    el.innerHTML = `<div class="fav-empty">${t('fav_empty')}</div>`;
+    el.innerHTML = '<div class="fav-empty">' + t('fav_empty') + '</div>';
     return;
   }
   el.innerHTML = list.map(function(item, i) {
-    return `
-      <div class="fav-item" onclick="setTarget(${item.lat}, ${item.lon})">
-        <div class="fav-info">
-          <div class="fav-name">${item.name}</div>
-          <div class="fav-coords">${item.lat.toFixed(6)}, ${item.lon.toFixed(6)}</div>
-        </div>
-        <button class="fav-del" onclick="deleteFav(${i}, event)">×</button>
-      </div>
-    `;
+    return '<div class="fav-item" onclick="setTarget(' + item.lat + ', ' + item.lon + ')">' +
+      '<div class="fav-info">' +
+        '<div class="fav-name">' + item.name + '</div>' +
+        '<div class="fav-coords">' + item.lat.toFixed(6) + ', ' + item.lon.toFixed(6) + '</div>' +
+      '</div>' +
+      '<button class="fav-del" onclick="deleteFav(' + i + ', event)">×</button>' +
+    '</div>';
   }).join('');
 }
 
 function parseUrl() {
-  const input = document.getElementById('urlInput').value.trim();
+  var input = document.getElementById('urlInput').value.trim();
   if (!input) return toast(t('paste_first'));
   toast(t('parsing'));
-  fetch(`${PARSE_API}?u=${encodeURIComponent(input)}&format=json`)
+  fetch(PARSE_API + '?u=' + encodeURIComponent(input) + '&format=json')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data && data.lat && data.lon) {
@@ -669,27 +667,25 @@ function parseUrl() {
 }
 
 function searchPlace() {
-  const q = document.getElementById('searchInput').value.trim();
+  var q = document.getElementById('searchInput').value.trim();
   if (!q) return toast(t('enter_place'));
-  const resEl = document.getElementById('searchResults');
-  resEl.innerHTML = `<div style="text-align:center;color:var(--muted);padding:10px">${t('searching')}</div>`;
+  var resEl = document.getElementById('searchResults');
+  resEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:10px">' + t('searching') + '</div>';
 
-  const isChinese = /[\u4e00-\u9fa5]/.test(q);
+  var isChinese = /[\u4e00-\u9fa5]/.test(q);
   if (isChinese) {
-    fetch(`https://restapi.amap.com/v3/place/text?keywords=${encodeURIComponent(q)}&key=832511019905952f7596a29d5b0c9509&offset=10`)
+    fetch('https://restapi.amap.com/v3/place/text?keywords=' + encodeURIComponent(q) + '&key=832511019905952f7596a29d5b0c9509&offset=10')
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (data.status === '1' && data.pois && data.pois.length > 0) {
           resEl.innerHTML = data.pois.map(function(poi) {
-            const parts = poi.location.split(',');
-            const gcjLon = parseFloat(parts[0]), gcjLat = parseFloat(parts[1]);
-            const wgs = gcj02ToWgs84(gcjLat, gcjLon);
-            return `
-              <div class="search-item" onclick="setTarget(${wgs.lat}, ${wgs.lon})">
-                <div class="si-name">${poi.name}</div>
-                <div class="si-sub">${poi.pname || ''}${poi.cityname || ''}${poi.adname || ''} ${poi.address || ''}</div>
-              </div>
-            `;
+            var parts = poi.location.split(',');
+            var gcjLon = parseFloat(parts[0]), gcjLat = parseFloat(parts[1]);
+            var wgs = gcj02ToWgs84(gcjLat, gcjLon);
+            return '<div class="search-item" onclick="setTarget(' + wgs.lat + ', ' + wgs.lon + ')">' +
+              '<div class="si-name">' + poi.name + '</div>' +
+              '<div class="si-sub">' + (poi.pname || '') + (poi.cityname || '') + (poi.adname || '') + ' ' + (poi.address || '') + '</div>' +
+            '</div>';
           }).join('');
         } else {
           fallbackOsmSearch(q, resEl);
@@ -702,24 +698,22 @@ function searchPlace() {
 }
 
 function fallbackOsmSearch(q, resEl) {
-  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=10`)
+  fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=10')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data && data.length > 0) {
         resEl.innerHTML = data.map(function(item) {
-          return `
-            <div class="search-item" onclick="setTarget(${parseFloat(item.lat)}, ${parseFloat(item.lon)})">
-              <div class="si-name">${item.display_name.split(',')[0]}</div>
-              <div class="si-sub">${item.display_name}</div>
-            </div>
-          `;
+          return '<div class="search-item" onclick="setTarget(' + parseFloat(item.lat) + ', ' + parseFloat(item.lon) + ')">' +
+            '<div class="si-name">' + item.display_name.split(',')[0] + '</div>' +
+            '<div class="si-sub">' + item.display_name + '</div>' +
+          '</div>';
         }).join('');
       } else {
-        resEl.innerHTML = `<div style="text-align:center;color:var(--muted);padding:10px">${t('not_found', q)}</div>`;
+        resEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:10px">' + t('not_found', q) + '</div>';
       }
     })
     .catch(function() {
-      resEl.innerHTML = `<div style="text-align:center;color:var(--red);padding:10px">${t('search_failed')}</div>`;
+      resEl.innerHTML = '<div style="text-align:center;color:var(--red);padding:10px">' + t('search_failed') + '</div>';
     });
 }
 
