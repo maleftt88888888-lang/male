@@ -50,19 +50,16 @@ app.get("/location-settings.js", (c) => c.body(b64ToBytes(LOCATION_SETTINGS_B64)
 app.get("/location-spoofer-qx.js", (c) => c.body(b64ToBytes(LOCATION_SPOOFER_QX_B64), 200, JS_HEADERS));
 
 function sgmodule(origin) {
-  return String.raw`#!name=iOS Location Spoofer
-#!desc=iOS Location Spoofer 模块，支持 Shadowrocket / Surge / Egern。
+  return String.raw`#!name=iOS Location Spoofer (Shadowrocket Fix)
+#!desc=iOS 虚拟定位模块 (已修复小火箭本地响应拦截与参数匹配)
 #!homepage=${origin}
 
-#!name=iOS Location Spoofer (Shadowrocket Fix)
-#!desc=iOS 虚拟定位模块 (已针对小火箭修改本地响应拦截)
-#!homepage=https://maleftt.medpic.eu.cc
-
 [Script]
-iOS Location Spoofer = type=http-response,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$,requires-body=1,binary-body-mode=1,max-size=1048576,timeout=10,script-path=https://maleftt.medpic.eu.cc/location-spoofer.js,argument=mode=response&debug=false
-iLS Settings = type=http-request,pattern=^https?:\/\/gs-loc(?:-cn)?\.apple\.com\/ils-settings\/,requires-body=1,max-size=1048576,timeout=10,script-path=https://maleftt.medpic.eu.cc/location-settings.js,script-echo-response=true
+iOS Location Spoofer = type=http-response,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$,requires-body=1,binary-body-mode=1,max-size=1048576,timeout=10,script-path=${origin}/location-spoofer.js,argument=mode=response&debug=false
+iLS Settings = type=http-request,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|maleftt\.medpic\.eu\.cc)\/ils-settings\/,requires-body=0,max-size=1048576,timeout=10,script-path=${origin}/location-settings.js,script-echo-response=true
+
 [MITM]
-hostname = %APPEND% gs-loc.apple.com, gs-loc-cn.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com`;
+hostname = %APPEND% gs-loc.apple.com, gs-loc-cn.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com, maleftt.medpic.eu.cc`;
 }
 
 function stoverride(origin) {
@@ -83,7 +80,7 @@ http:
       max-size: 0
       timeout: 30
       argument: mode=response&debug=false
-    - match: ^https?:\/\/gs-loc(-cn)?\.apple\.com\/ils-settings\/
+    - match: ^https?:\/\/(?:gs-loc(-cn)?\.apple\.com|maleftt\.medpic\.eu\.cc)\/ils-settings\/
       name: ios-location-settings
       type: request
       require-body: false
@@ -105,10 +102,10 @@ function lnplugin(origin) {
 
 [Script]
 http-response ^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$ script-path=${origin}/location-spoofer.js, requires-body=true, binary-body-mode=true, max-size=1048576, timeout=12, tag=iOS Location Spoofer, argument=mode=response&debug=false
-http-request ^https?:\/\/gs-loc(?:-cn)?\.apple\.com\/ils-settings\/ script-path=${origin}/location-settings.js, requires-body=false, timeout=10, tag=iLS Settings
+http-request ^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|maleftt\.medpic\.eu\.cc)\/ils-settings\/ script-path=${origin}/location-settings.js, requires-body=false, timeout=10, tag=iLS Settings
 
 [MITM]
-hostname = gs-loc.apple.com, gs-loc-cn.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com`;
+hostname = gs-loc.apple.com, gs-loc-cn.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com, maleftt.medpic.eu.cc`;
 }
 
 function qxsnippet(origin) {
@@ -118,10 +115,10 @@ function qxsnippet(origin) {
 
 [rewrite_local]
 ^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$ url script-response-body ${origin}/location-spoofer-qx.js
-^https?:\/\/gs-loc(?:-cn)?\.apple\.com\/ils-settings\/ url script-echo-response ${origin}/location-settings.js
+^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|maleftt\.medpic.eu\.cc)\/ils-settings\/ url script-echo-response ${origin}/location-settings.js
 
 [mitm]
-hostname = gs-loc.apple.com, gs-loc-cn.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com`;
+hostname = gs-loc.apple.com, gs-loc-cn.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com, maleftt.medpic.eu.cc`;
 }
 
 const TXT = { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" };
@@ -189,10 +186,8 @@ app.onError((e, c) => {
   return c.text(`${e}`, 500);
 });
 
-/* ---- Worker Direct Fetch Handler ---- */
 export default {
   async fetch(request, env, ctx) {
-    // 允许所有来自中国大陆 (CN) 及全球各地的访问，不再进行地理位置拦截
     return app.fetch(request, env, ctx);
   },
 };
