@@ -96,7 +96,7 @@ body {
     <p>模块管理 & 地图选点面板</p>
   </div>
 
-  <a class="btn-green-map" href="/page">🗺️ 进入选点网页</a>
+  <a class="btn-green-map" href="/picker">🗺️ 进入选点网页</a>
 
   <div class="section-title">安装模块</div>
   <div class="section-desc">选你的代理客户端，点「一键导入」直接装；或复制手动添加。</div>
