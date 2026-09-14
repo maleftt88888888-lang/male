@@ -1,5 +1,7 @@
 export function getLandingHtml(origin) {
-  const srUrl = origin + '/ios-location-spoofer.sgmodule';
+  // 补全协议和域名，确保跳转链接可用
+  const baseUrl = origin && origin !== 'undefined' ? origin : '';
+  const srUrl = baseUrl + '/ios-location-spoofer.sgmodule';
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -42,21 +44,9 @@ body {
   background:linear-gradient(135deg,var(--cyan),var(--cyan2));
   color:#022a2d; font-size:15px; font-weight:700; text-decoration:none;
   border-radius:12px; box-shadow:0 6px 18px rgba(23,195,207,.28);
-  transition:all .15s; margin-bottom:12px;
+  transition:all .15s;
 }
 .btn-primary:active { filter:brightness(1.12); transform:scale(.98); }
-
-.copy-box { display:flex; gap:8px; align-items:center; }
-.copy-box input {
-  flex:1; padding:10px 12px; background:var(--inset); border:1px solid var(--line);
-  border-radius:10px; font-family:"SF Mono",ui-monospace,monospace; font-size:12px;
-  color:var(--mono); outline:none; min-width:0;
-}
-.btn-copy {
-  padding:10px 16px; background:var(--card2); border:1px solid var(--line);
-  color:var(--txt); font-size:13px; font-weight:600; border-radius:10px; cursor:pointer;
-}
-.btn-copy:active { background:#2a3140; }
 
 .btn-map {
   display:block; width:100%; padding:14px; text-align:center;
@@ -65,14 +55,6 @@ body {
   border-radius:12px; transition:all .15s;
 }
 .btn-map:active { background:#2a3140; transform:scale(.98); }
-
-.toast {
-  position:fixed; top:20px; left:50%; transform:translateX(-50%);
-  background:rgba(8,10,14,.92); border:1px solid var(--line); color:#fff;
-  padding:10px 20px; border-radius:20px; font-size:13px; opacity:0;
-  transition:opacity .3s; pointer-events:none; z-index:9999;
-}
-.toast.show { opacity:1; }
 </style>
 </head>
 <body>
@@ -84,11 +66,7 @@ body {
   </div>
 
   <div class="card">
-    <a class="btn-primary" href="shadowrocket://config/add/remote?url=${encodeURIComponent(srUrl)}">一键导入 Shadowrocket</a>
-    <div class="copy-box">
-      <input id="srUrl" value="${srUrl}" readonly />
-      <button class="btn-copy" onclick="copyText('srUrl', this)">复制</button>
-    </div>
+    <a class="btn-primary" id="srBtn" href="#">一键导入 Shadowrocket</a>
   </div>
 
   <div style="margin-top:20px;">
@@ -96,18 +74,11 @@ body {
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
-
 <script>
-function copyText(id, btn) {
-  var input = document.getElementById(id);
-  input.select();
-  navigator.clipboard.writeText(input.value).then(function() {
-    var orig = btn.textContent;
-    btn.textContent = '已复制';
-    setTimeout(function() { btn.textContent = orig; }, 1500);
-  });
-}
+// 动态修正 scheme 跳转，确保在客户端中可直接调起 Shadowrocket
+var base = "${baseUrl}" || window.location.origin;
+var fullModuleUrl = base + '/ios-location-spoofer.sgmodule';
+document.getElementById('srBtn').href = 'shadowrocket://config/add/remote?url=' + encodeURIComponent(fullModuleUrl);
 </script>
 </body>
 </html>`;
