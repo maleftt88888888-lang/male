@@ -85,8 +85,8 @@ footer{ text-align:center; font-size:11.5px; color:var(--muted); margin-top:32px
   <div class="divider"></div>
 
   <h2>安装模块</h2>
-  <p class="sub">选择你的代理客户端，点击「一键导入」或复制链接手动添加。</p>
-  <div class="note">📍 <b>生效前提：</b>① 代理客户端已启动（非直连模式）；② 开启 HTTPS 解密(MITM) 并信任证书；③ 安装对应客户端模块。配置完成后打开选点页设置位置，点击「保存到设备」即可生效。</div>
+  <p class="sub">点击「一键导入Shadworocket」或复制链接手动添加。</p>
+  <div class="note">📍 <b>生效前提：</b>① Shadworocket客户端已启动（配置模式）；② 开启 HTTPS 解密(MITM) 并信任证书；③ 安装对应客户端模块。配置完成后打开选点页设置位置，点击「保存到设备」即可生效。</div>
 
   <div id="plats"></div>
 
