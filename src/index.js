@@ -55,7 +55,7 @@ function sgmodule(origin) {
 #!homepage=${origin}
 
 [Script]
-iOS Location Spoofer = type=http-response,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$,requires-body=1,binary-body-mode=1,max-size=1048576,timeout=10,script-path=${origin}/location-spoofer.js,argument=mode=response&debug=false
+iOS Location Spoofer = type=http-response,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$,requires-body=1,binary-body-mode=1,max-size=1048576,timeout=10,script-path=${origin}/location-spoofer.js,argument=mode=response&enabled=true&debug=false
 iLS Settings = type=http-request,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|maleftt\.medpic\.eu\.cc)\/ils-settings\/,requires-body=0,max-size=1048576,timeout=10,script-path=${origin}/location-settings.js,script-echo-response=true
 
 [MITM]
@@ -79,7 +79,7 @@ http:
       binary-mode: true
       max-size: 0
       timeout: 30
-      argument: mode=response&debug=false
+      argument: mode=response&enabled=true&debug=false
     - match: ^https?:\/\/(?:gs-loc(-cn)?\.apple\.com|maleftt\.medpic\.eu\.cc)\/ils-settings\/
       name: ios-location-settings
       type: request
