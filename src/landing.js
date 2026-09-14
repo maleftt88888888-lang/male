@@ -1,7 +1,5 @@
 export function getLandingHtml(origin) {
-  // 补全协议和域名，确保跳转链接可用
   const baseUrl = origin && origin !== 'undefined' ? origin : '';
-  const srUrl = baseUrl + '/ios-location-spoofer.sgmodule';
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -66,7 +64,27 @@ body {
   </div>
 
   <div class="card">
-    <a class="btn-primary" id="srBtn" href="#">一键导入 Shadowrocket</a>
+    <a class="btn-primary" id="btnSurge" href="#">一键导入 Surge</a>
+  </div>
+
+  <div class="card">
+    <a class="btn-primary" id="btnSr" href="#">一键导入 Shadowrocket</a>
+  </div>
+
+  <div class="card">
+    <a class="btn-primary" id="btnEgern" href="#">一键导入 Egern</a>
+  </div>
+
+  <div class="card">
+    <a class="btn-primary" id="btnLoon" href="#">一键导入 Loon</a>
+  </div>
+
+  <div class="card">
+    <a class="btn-primary" id="btnStash" href="#">一键导入 Stash</a>
+  </div>
+
+  <div class="card">
+    <a class="btn-primary" id="btnQX" href="#">一键导入 Quantumult X</a>
   </div>
 
   <div style="margin-top:20px;">
@@ -75,10 +93,18 @@ body {
 </div>
 
 <script>
-// 动态修正 scheme 跳转，确保在客户端中可直接调起 Shadowrocket
 var base = "${baseUrl}" || window.location.origin;
-var fullModuleUrl = base + '/ios-location-spoofer.sgmodule';
-document.getElementById('srBtn').href = 'shadowrocket://config/add/remote?url=' + encodeURIComponent(fullModuleUrl);
+var sgUrl = base + '/ios-location-spoofer.sgmodule';
+var lnUrl = base + '/ios-location-spoofer.lnplugin';
+var stUrl = base + '/ios-location-spoofer.stoverride';
+var qxUrl = base + '/ios-location-spoofer.snippet';
+
+document.getElementById('btnSurge').href = 'surge:///install-config?url=' + encodeURIComponent(sgUrl);
+document.getElementById('btnSr').href = 'shadowrocket://config/add/remote?url=' + encodeURIComponent(sgUrl);
+document.getElementById('btnEgern').href = 'egern://import?url=' + encodeURIComponent(sgUrl);
+document.getElementById('btnLoon').href = 'loon://import?plugin=' + encodeURIComponent(lnUrl);
+document.getElementById('btnStash').href = 'stash://install-override?url=' + encodeURIComponent(stUrl);
+document.getElementById('btnQX').href = 'quantumult-x://exec?type=snippet&url=' + encodeURIComponent(qxUrl);
 </script>
 </body>
 </html>`;
