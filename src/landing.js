@@ -1,151 +1,114 @@
-export function getLandingHtml() {
+export function getLandingHtml(origin) {
+  const srUrl = origin + '/ios-location-spoofer.sgmodule';
+
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>iOS Location Spoofer · 虚拟定位</title>
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>iOS Location Spoofer</title>
 <meta name="theme-color" content="#0a0c11">
-<link rel="apple-touch-icon" href="/icon-180.png">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <style>
-:root{
-  --bg:#0a0c11; --card:#12161d; --card2:#191e28; --line:#242b38;
-  --cyan:#17c3cf; --cyan2:#0e97a1; --green:#22c55e; --green2:#159a45;
-  --red:#ff5b60; --amber:#f5a623; --txt:#eef2f8; --muted:#8a93a5; --mono:#7fe3ea;
+:root {
+  --bg:#0a0c11; --card:#12161d; --card2:#191e28; --line:#242b38; --inset:rgba(255,255,255,.045);
+  --cyan:#17c3cf; --cyan2:#0e97a1; --green:#22c55e; --txt:#eef2f8; --muted:#8a93a5; --mono:#7fe3ea;
 }
-*{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-body{
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
   font-family:-apple-system,system-ui,"SF Pro","Helvetica Neue",sans-serif;
-  color:var(--txt); line-height:1.5;
+  color:var(--txt);
   background:
-    radial-gradient(1100px 420px at 50% -140px, rgba(23,195,207,.16), transparent 70%),
-    radial-gradient(700px 360px at 90% 8%, rgba(34,197,94,.08), transparent 65%),
+    radial-gradient(900px 380px at 50% -120px, rgba(23,195,207,.14), transparent 70%),
+    radial-gradient(600px 300px at 92% 6%, rgba(34,197,94,.07), transparent 65%),
     var(--bg);
   background-attachment:fixed;
+  padding:20px 16px;
 }
-.wrap{ max-width:600px; margin:0 auto; padding:28px 16px calc(44px + env(safe-area-inset-bottom)); }
+.container { max-width:540px; margin:0 auto; }
+.header { text-align:center; margin-bottom:24px; padding-top:12px; }
+.header h1 { font-size:22px; font-weight:800; color:var(--txt); letter-spacing:-.3px; }
+.header p { font-size:13px; color:var(--muted); margin-top:6px; }
 
-/* --- header --- */
-header{ text-align:center; padding:10px 0 20px; }
-header .logowrap{ position:relative; width:74px; margin:0 auto 16px; }
-header .logo{ width:74px; height:74px; border-radius:20px; display:block; box-shadow:0 0 0 1px var(--line),0 10px 30px rgba(23,195,207,.28); }
-h1{ font-size:24px; font-weight:800; letter-spacing:.3px; background:linear-gradient(92deg,#eafcff,#7fe3ea 55%,#22c55e); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.card {
+  background:linear-gradient(180deg,rgba(25,30,40,.72),rgba(18,22,29,.72));
+  -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
+  border:1px solid var(--line); border-radius:18px; padding:20px;
+  margin-bottom:16px; box-shadow:0 8px 28px rgba(0,0,0,.34);
+}
 
-/* --- primary CTA --- */
-.ctas{ margin:16px 0 24px; }
-.enter{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:16px 14px; border:none; border-radius:14px; font-size:16px; font-weight:800; cursor:pointer; text-decoration:none; transition:transform .12s,box-shadow .12s; }
-.enter:active{ transform:scale(.98); }
-.enter.go{ background:linear-gradient(135deg,#2ee06a,#129a44); color:#04240f; box-shadow:0 10px 26px rgba(34,197,94,.34); }
+.btn-primary {
+  display:block; width:100%; padding:14px; text-align:center;
+  background:linear-gradient(135deg,var(--cyan),var(--cyan2));
+  color:#022a2d; font-size:15px; font-weight:700; text-decoration:none;
+  border-radius:12px; box-shadow:0 6px 18px rgba(23,195,207,.28);
+  transition:all .15s; margin-bottom:12px;
+}
+.btn-primary:active { filter:brightness(1.12); transform:scale(.98); }
 
-.divider{ height:1px; background:linear-gradient(90deg,transparent,var(--line),transparent); margin:24px 0; }
+.copy-box { display:flex; gap:8px; align-items:center; }
+.copy-box input {
+  flex:1; padding:10px 12px; background:var(--inset); border:1px solid var(--line);
+  border-radius:10px; font-family:"SF Mono",ui-monospace,monospace; font-size:12px;
+  color:var(--mono); outline:none; min-width:0;
+}
+.btn-copy {
+  padding:10px 16px; background:var(--card2); border:1px solid var(--line);
+  color:var(--txt); font-size:13px; font-weight:600; border-radius:10px; cursor:pointer;
+}
+.btn-copy:active { background:#2a3140; }
 
-/* --- section heads --- */
-h2{ font-size:16px; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:9px; }
-h2::before{ content:""; width:4px; height:16px; border-radius:2px; background:linear-gradient(180deg,var(--cyan),var(--green)); }
-.sub{ font-size:12.5px; color:var(--muted); margin:0 0 14px 13px; }
-.note{ background:var(--card); border:1px solid var(--line); border-left:4px solid var(--cyan); border-radius:11px; padding:12px 14px; font-size:12.5px; color:#c3ccdb; margin-bottom:16px; }
-.note b{ color:var(--txt); }
+.btn-map {
+  display:block; width:100%; padding:14px; text-align:center;
+  background:var(--card2); border:1px solid var(--line);
+  color:var(--txt); font-size:15px; font-weight:700; text-decoration:none;
+  border-radius:12px; transition:all .15s;
+}
+.btn-map:active { background:#2a3140; transform:scale(.98); }
 
-/* --- platform cards --- */
-.plat{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:12px; }
-.plat .big{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px; border:none; border-radius:11px; background:linear-gradient(135deg,var(--cyan),var(--cyan2)); color:#022a2d; font-size:15px; font-weight:800; cursor:pointer; text-align:center; text-decoration:none; transition:filter .12s,transform .12s; }
-.plat .big:active{ filter:brightness(1.1); transform:scale(.98); }
-.plat .line{ display:flex; align-items:center; gap:8px; margin-top:9px; }
-.plat .url{ flex:1; min-width:0; font-family:"SF Mono",ui-monospace,monospace; font-size:11px; color:var(--muted); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px 10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.plat .copy{ flex:none; padding:8px 15px; border:1px solid var(--line); border-radius:8px; background:var(--card2); color:var(--txt); font-size:12.5px; font-weight:600; cursor:pointer; transition:all .12s; }
-.plat .copy:active{ background:#2a3140; }
-.plat .copy.ok{ background:var(--green); border-color:var(--green); color:#04240f; }
-.plat .pnote{ font-size:11.5px; color:var(--muted); margin-top:7px; line-height:1.6; }
-
-/* --- info boxes --- */
-.mitm{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px 15px; font-size:12.5px; color:#c3ccdb; margin-top:16px; }
-.mitm b{ color:var(--txt); }
-.mitm code{ display:inline-block; font-family:"SF Mono",ui-monospace,monospace; font-size:11.5px; color:var(--mono); word-break:break-all; line-height:2; }
-.mitm .hosts{ margin-top:8px; padding:10px 12px; background:var(--bg); border:1px solid var(--line); border-radius:9px; }
-.mitm .hosts code{ line-height:2.1; }
-
-.toast{ position:fixed; left:50%; bottom:40px; transform:translateX(-50%) translateY(20px); background:rgba(8,10,14,.92); color:#fff; padding:11px 20px; border-radius:22px; font-size:14px; opacity:0; transition:all .25s; pointer-events:none; z-index:99; border:1px solid var(--line); }
-.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
-footer{ text-align:center; font-size:11.5px; color:var(--muted); margin-top:32px; line-height:1.9; }
+.toast {
+  position:fixed; top:20px; left:50%; transform:translateX(-50%);
+  background:rgba(8,10,14,.92); border:1px solid var(--line); color:#fff;
+  padding:10px 20px; border-radius:20px; font-size:13px; opacity:0;
+  transition:opacity .3s; pointer-events:none; z-index:9999;
+}
+.toast.show { opacity:1; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="logowrap"><img class="logo" src="/icon.svg" alt=""></div>
+
+<div class="container">
+  <div class="header">
     <h1>iOS Location Spoofer</h1>
-  </header>
-
-  <div class="ctas">
-    <a class="enter go" href="/picker">🗺️ 进入选点网页</a>
+    <p>模块管理 & 地图选点面板</p>
   </div>
 
-  <div class="divider"></div>
-
-  <h2>安装模块</h2>
-  <p class="sub">点击「一键导入Shadworocket」或复制链接手动添加。</p>
-  <div class="note">📍 <b>生效前提：</b>① Shadworocket客户端已启动（配置模式）；② 开启 HTTPS 解密(MITM) 并信任证书；③ 安装对应客户端模块。配置完成后打开选点页设置位置，点击「保存到设备」即可生效。</div>
-
-  <div id="plats"></div>
-
-  <div class="mitm">
-    <b>Quantumult X 资源解析器 URL：</b><br>
-    <code>https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/Scripts/resource-parser.js</code><br>
-    填入 QX 配置 <code>[general]</code> 下：<br>
-    <code>resource_parser_url=https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/Scripts/resource-parser.js</code>
-  </div>
-  <div class="mitm">
-    <b>MITM 主机名（若未自动生效，请手动在客户端中添加）：</b>
-    <div class="hosts"><code>gs-loc.apple.com<br>gs-loc-cn.apple.com<br>bluedot.is.autonavi.com<br>bluedot.is.autonavi.com.gds.alibabadns.com</code></div>
+  <div class="card">
+    <a class="btn-primary" href="shadowrocket://config/add/remote?url=${encodeURIComponent(srUrl)}">一键导入 Shadowrocket</a>
+    <div class="copy-box">
+      <input id="srUrl" value="${srUrl}" readonly />
+      <button class="btn-copy" onclick="copyText('srUrl', this)">复制</button>
+    </div>
   </div>
 
-  <footer>
-    坐标保存在本地设备，服务端不留存任何记录。
-  </footer>
+  <div style="margin-top:20px;">
+    <a class="btn-map" href="/page">打开地图选点界面 →</a>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-var origin = location.origin;
-function u(file){ return origin + '/' + file; }
-var qxExtra = ', tag=iOS Location Spoofer, update-interval=172800, opt-parser=true, enabled=true';
-var PLATS = [
-  { name:'Surge', file:'ios-location-spoofer.sgmodule', scheme:function(x){ return 'surge:///install-module?url=' + encodeURIComponent(x); } },
-  { name:'Shadowrocket', file:'ios-location-spoofer.sgmodule', scheme:function(x){ return 'shadowrocket://install?module=' + encodeURIComponent(x); } },
-  { name:'Egern', file:'ios-location-spoofer.sgmodule', scheme:function(x){ return 'egern:///install-module?url=' + encodeURIComponent(x); } },
-  { name:'Loon', file:'ios-location-spoofer.lnplugin', scheme:function(x){ return 'loon://import?plugin=' + encodeURIComponent(x); } },
-  { name:'Stash', file:'ios-location-spoofer.stoverride', scheme:function(x){ return 'stash://install-override?url=' + encodeURIComponent(x); } },
-  { name:'Quantumult X', file:'ios-location-spoofer.snippet',
-    scheme:function(x){ return 'quantumult-x:///add-resource?remote-resource=' + encodeURIComponent(JSON.stringify({ rewrite_remote:[x + qxExtra] })); },
-    note:'QX 一键导入需先配置资源解析器；MITM 主机名需手动加进设置 → MITM。' }
-];
-
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); }, 1800); }
-function copyText(s){
-  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(s);
-  return new Promise(function(res,rej){ try{ var ta=document.createElement('textarea'); ta.value=s; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); var ok=document.execCommand('copy'); document.body.removeChild(ta); ok?res():rej(); }catch(e){ rej(e); } });
+function copyText(id, btn) {
+  var input = document.getElementById(id);
+  input.select();
+  navigator.clipboard.writeText(input.value).then(function() {
+    var orig = btn.textContent;
+    btn.textContent = '已复制';
+    setTimeout(function() { btn.textContent = orig; }, 1500);
+  });
 }
-function doCopy(s, btn){ copyText(s).then(function(){ toast('已复制模块链接'); var o=btn.textContent; btn.classList.add('ok'); btn.textContent='✓'; setTimeout(function(){ btn.textContent=o; btn.classList.remove('ok'); }, 1200); }).catch(function(){ toast('复制失败，请手动选择'); }); }
-
-var html = '';
-for (var i=0; i<PLATS.length; i++){
-  var p = PLATS[i];
-  var url = u(p.file);
-  html += '<div class="plat">' +
-    '<a class="big" href="' + esc(p.scheme(url)) + '">一键导入 ' + esc(p.name) + '</a>' +
-    '<div class="line"><span class="url">' + esc(url) + '</span>' +
-    '<button class="copy" data-url="' + esc(url) + '">复制</button></div>' +
-    (p.note ? '<div class="pnote">' + esc(p.note) + '</div>' : '') +
-    '</div>';
-}
-document.getElementById('plats').innerHTML = html;
-var btns = document.querySelectorAll('.copy');
-for (var j=0; j<btns.length; j++){ (function(b){ b.addEventListener('click', function(){ doCopy(b.getAttribute('data-url'), b); }); })(btns[j]); }
-<\/script>
+</script>
 </body>
 </html>`;
 }
