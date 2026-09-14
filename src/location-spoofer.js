@@ -10,19 +10,12 @@
   "use strict";
 
   var DEFAULT_CONFIG = {
-    // Stateless default: OFF until a coordinate is written to the device's own
-    // $persistentStore (by the picker's save-interceptor) or enabled=true is passed
-    // as a module argument. This makes "nothing picked yet" fall through to the real
-    // location instead of the built-in Apple Park default. Stateful module manifests
-    // pass enabled=true explicitly to keep their always-on behavior.
     enabled: false,
     mode: "response",
     latitude: 37.3349,
     longitude: -122.00902,
     horizontalAccuracy: 39,
     verticalAccuracy: 1000,
-    // Random perturbation radius in metres (Yu9191 v1.1 "扰动半径"). 0 = off. The
-    // real value is written per-device by the picker (see location-settings.js).
     randomRadius: 0,
     altitude: 530,
     unknownValue4: 3,
@@ -36,12 +29,7 @@
     rawLimit: 0
   };
 
-  // Prefix prepended to a SPOOFED (synthesized) response. Mirrors the original Go
-  // `initialBytes = 0001000000010000` from main.go:253.
   var APPLE_WLOC_PREFIX = bytesFromArray([0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00]);
-
-  // Stable marker that precedes the AppleWLoc protobuf inside a REAL Apple /clls/wloc
-  // response. After the marker come 2 bytes (uint16 BE payload length) then the payload.
   var APPLE_WLOC_MARKER = bytesFromArray([0x00, 0x00, 0x00, 0x01, 0x00, 0x00]);
   var ROOT_DROP_FIELDS = { 3: true, 4: true, 33: true };
   var CELL_RESPONSE_FIELDS = { 22: true, 24: true };
@@ -88,8 +76,6 @@
     return true;
   }
 
-  // Search for a byte sequence within bytes; returns first index or -1.
-  // Searches forward to prefer the earliest (most likely correct) match.
   function findBytes(bytes, marker) {
     if (!bytes || !marker || marker.length === 0) {
       return -1;
@@ -109,7 +95,6 @@
     return -1;
   }
 
-  // Try to parse bytes as protobuf fields. Returns fields array or null on failure.
   function tryParseFields(bytes) {
     try {
       if (!bytes || bytes.length === 0) {
@@ -418,7 +403,6 @@
   }
 
   function coordToInt(value) {
-    // 使用 Math.trunc 精确匹配 Go: int64(coord * 1e8)
     return Math.trunc(Number(value) * 100000000);
   }
 
@@ -483,8 +467,6 @@
     if (!Number.isFinite(cfg.longitude) || cfg.longitude < -180 || cfg.longitude > 180) {
       throw new Error("invalid longitude");
     }
-    // Apply the random offset last, once per response, so every patched WiFi/cell
-    // location in this response shares the same jittered point.
     if (cfg.randomRadius > 0) {
       var jittered = applyRandomRadius(cfg.latitude, cfg.longitude, cfg.randomRadius);
       cfg.latitude = jittered.latitude;
@@ -494,10 +476,6 @@
     return cfg;
   }
 
-  // Random perturbation (Yu9191 v1.1 "扰动半径"): offset the point by a random distance,
-  // uniform over a disc of the given radius in metres (distance = sqrt(rand)*R), using the
-  // spherical destination-point formula so repeated positioning never returns identical
-  // coordinates. Mirrors dist/wloc.js in Yu9191/wloc exactly.
   function applyRandomRadius(lat, lon, radiusMeters) {
     var r = Number(radiusMeters);
     if (!Number.isFinite(r) || r <= 0) {
@@ -706,31 +684,16 @@
     };
   }
 
-  // Extract the AppleWLoc protobuf payload from a /clls/wloc response body.
-  // Returns a typed result: { kind, payload, ... } so the caller can write back
-  // in the correct format.
-  //
-  // Supported shapes:
-  //   "arpc"      – Full ARPC envelope (same format as requests). The real Apple
-  //                 response uses this. Contains arpc metadata for write-back.
-  //   "synthetic" – Our own spoofed response: APPLE_WLOC_PREFIX (8 bytes) + uint16 len.
-  //   "marker"    – Fallback: marker search 00 00 00 01 00 00 + uint16 len.
-  //                 Keeps the prefix/suffix bytes for write-back.
-  //   "bare"      – Bare protobuf payload (field tag 0x12 = wifi device, wire type 2).
   function extractAppleWLocPayload(responseBytes) {
     if (!responseBytes || responseBytes.length < 2) {
       throw new Error("Apple WLoc response too short");
     }
 
-    // Shape 1: prefixed WLoc response. The original Go implementation emits
-    // 0001000000010000, while Apple's live responses may use 0001000000030000.
     var prefixed = extractPrefixedAppleWLocPayload(responseBytes);
     if (prefixed) {
       return prefixed;
     }
 
-    // Shape 2: ARPC envelope – try the proper structured parser first.
-    // The Apple /clls/wloc response uses the same ARPC framing as the request.
     try {
       var arpc = parseArpc(responseBytes);
       if (arpc.payload.length > 0 && tryParseFields(arpc.payload) !== null) {
@@ -741,11 +704,8 @@
         };
       }
     } catch (e) {
-      // ARPC parse failed – continue with fallback strategies.
     }
 
-    // Shape 3: marker search fallback. The ARPC functionId (00 00 00 01) may be
-    // followed by uint16/uint32 payload length. Try to find and validate.
     var markerIdx = findBytes(responseBytes, APPLE_WLOC_MARKER);
     if (markerIdx >= 0) {
       var lenOffset = markerIdx + APPLE_WLOC_MARKER.length;
@@ -754,7 +714,6 @@
         var realPayloadOffset = lenOffset + 2;
         if (realLen > 0 && realPayloadOffset + realLen <= responseBytes.length) {
           var candidatePayload = responseBytes.slice(realPayloadOffset, realPayloadOffset + realLen);
-          // Only accept if the candidate parses as valid protobuf.
           if (tryParseFields(candidatePayload) !== null) {
             return {
               kind: "marker",
@@ -768,7 +727,6 @@
       }
     }
 
-    // Shape 4: bare protobuf payload (best effort).
     if (looksLikeAppleWLocPayload(responseBytes)) {
       return {
         kind: "bare",
@@ -779,8 +737,6 @@
     throw new Error("missing Apple WLoc response prefix");
   }
 
-  // Heuristic: a valid AppleWLoc payload starts with a protobuf tag whose wire type
-  // is 0 or 2 and field number is > 0. Field 2 (wifi) tag is 0x12.
   function looksLikeAppleWLocPayload(bytes) {
     if (!bytes || bytes.length === 0) {
       return false;
@@ -811,7 +767,6 @@
     var response;
 
     if (extraction.kind === "arpc") {
-      // Write back in ARPC format, preserving the original envelope metadata.
       var arpcOut = {
         version: extraction.arpc.version,
         locale: extraction.arpc.locale,
@@ -822,7 +777,6 @@
       };
       response = serializeArpc(arpcOut);
     } else if (extraction.kind === "marker") {
-      // Rebuild: original prefix + marker bytes + new uint16 len + patched payload + suffix.
       var newLenBytes = writeUInt16BE(patched.payload.length);
       response = concatBytes([
         extraction.prefix,
@@ -832,7 +786,6 @@
         extraction.suffix
       ]);
     } else {
-      // synthetic / bare – use the simple prefix format.
       response = buildAppleWLocResponse(patched.payload, extraction.prefix);
     }
 
@@ -939,10 +892,7 @@
     }
     try {
       var value = $persistentStore.read(name);
-      if (value == null || value === "") {
-        return null;
-      }
-      return String(value);
+      return value == null || value === "" ? null : String(value);
     } catch (err) {
       return null;
     }
@@ -1010,1038 +960,37 @@
           ? JSON.stringify($argument)
           : String($argument);
     console.log("Location spoofer $argument raw: " + raw);
-    console.log(
-      "Location spoofer args parsed: lat=" +
-        args.latitude +
-        ", lng=" +
-        args.longitude +
-        ", configUrl=" +
-        (resolveConfigUrl(args) || "<none>")
-    );
+    console.log("Location spoofer resolved config url: " + resolveConfigUrl(args));
   }
 
-  function detectRuntime() {
-    if (typeof $environment !== "undefined" && $environment && $environment.product) {
-      return String($environment.product);
-    }
-    if (typeof $loon !== "undefined") {
-      return "Loon";
-    }
-    return "Unknown";
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+      DEFAULT_CONFIG: DEFAULT_CONFIG,
+      spoofAppleResponse: spoofAppleResponse,
+      spoofArpcRequest: spoofArpcRequest,
+      readScriptArguments: readScriptArguments
+    };
   }
 
-  function isLoonRuntime() {
-    return detectRuntime() === "Loon";
-  }
-
-  function isGzipBytes(bytes) {
-    return bytes && bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b;
-  }
-
-  function readGeocodeCache() {
-    if (typeof $persistentStore === "undefined" || !$persistentStore.read) {
-      return null;
-    }
+  if (typeof $response !== "undefined") {
     try {
-      var raw = $persistentStore.read("location_spoofer_geocode");
-      return raw ? JSON.parse(raw) : null;
-    } catch (err) {
-      return null;
-    }
-  }
-
-  function writeGeocodeCache(entry) {
-    if (typeof $persistentStore === "undefined" || !$persistentStore.write) {
-      return;
-    }
-    try {
-      $persistentStore.write("location_spoofer_geocode", JSON.stringify(entry));
-    } catch (err) {
-      // ignore cache write failures
-    }
-  }
-
-  function fetchElevation(lat, lng, callback) {
-    if (typeof $httpClient === "undefined" || !$httpClient.get) {
-      callback(null);
-      return;
-    }
-    var url =
-      "https://api.open-meteo.com/v1/elevation?latitude=" +
-      encodeURIComponent(String(lat)) +
-      "&longitude=" +
-      encodeURIComponent(String(lng));
-    $httpClient.get({ url: url, timeout: 4000 }, function (error, response, body) {
-      if (error || !body) {
-        callback(null);
-        return;
-      }
-      try {
-        var data = JSON.parse(body);
-        if (data && data.elevation && data.elevation.length) {
-          callback(Math.round(Number(data.elevation[0])));
-          return;
+      var args = readScriptArguments();
+      if (args.enabled !== false) {
+        var rawBody = messageBodyToBytes($response);
+        if (rawBody) {
+          var spoofed = spoofAppleResponse(rawBody, args);
+          $done({ body: spoofed.response });
+        } else {
+          $done({});
         }
-      } catch (err) {
-        // ignore parse failures
-      }
-      callback(null);
-    });
-  }
-
-  function geocodeAddress(address, debug, callback) {
-    var query = String(address || "").trim();
-    if (!query) {
-      callback(null);
-      return;
-    }
-
-    var cached = readGeocodeCache();
-    if (cached && cached.address === query && Number.isFinite(Number(cached.latitude)) && Number.isFinite(Number(cached.longitude))) {
-      if (debug) {
-        console.log("Location spoofer geocode cache hit: " + query + " -> " + cached.latitude + "," + cached.longitude);
-      }
-      callback(cached);
-      return;
-    }
-
-    if (typeof $httpClient === "undefined" || !$httpClient.get) {
-      if (debug) {
-        console.log("Location spoofer geocode skipped: $httpClient unavailable");
-      }
-      callback(null);
-      return;
-    }
-
-    var url =
-      "https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=0&q=" +
-      encodeURIComponent(query);
-    $httpClient.get(
-      {
-        url: url,
-        timeout: 8000,
-        headers: { "User-Agent": "ios-location-spoofer/1.0 (Loon plugin)" }
-      },
-      function (error, response, body) {
-        if (error || !body) {
-          if (debug) {
-            console.log("Location spoofer geocode failed: " + (error || "empty body"));
-          }
-          callback(null);
-          return;
-        }
-        try {
-          var results = JSON.parse(body);
-          if (!results || !results.length) {
-            if (debug) {
-              console.log("Location spoofer geocode no result for: " + query);
-            }
-            callback(null);
-            return;
-          }
-          var hit = results[0];
-          var lat = Number(hit.lat);
-          var lng = Number(hit.lon);
-          if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-            callback(null);
-            return;
-          }
-          var entry = {
-            address: query,
-            latitude: lat,
-            longitude: lng,
-            displayName: hit.display_name || query
-          };
-          fetchElevation(lat, lng, function (altitude) {
-            if (altitude != null) {
-              entry.altitude = altitude;
-            }
-            writeGeocodeCache(entry);
-            if (debug) {
-              console.log(
-                "Location spoofer geocode resolved: " +
-                  query +
-                  " -> " +
-                  lat +
-                  "," +
-                  lng +
-                  (altitude != null ? ", alt=" + altitude : "")
-              );
-            }
-            callback(entry);
-          });
-        } catch (err) {
-          if (debug) {
-            console.log("Location spoofer geocode parse failed: " + err.message);
-          }
-          callback(null);
-        }
-      }
-    );
-  }
-
-  function mergeConfig(base, extra) {
-    var out = {};
-    var key;
-    for (key in base) {
-      if (Object.prototype.hasOwnProperty.call(base, key)) {
-        out[key] = base[key];
-      }
-    }
-    extra = extra || {};
-    for (key in extra) {
-      if (Object.prototype.hasOwnProperty.call(extra, key)) {
-        out[key] = extra[key];
-      }
-    }
-    return out;
-  }
-
-  function decodeBase64(value) {
-    if (typeof atob === "function") {
-      return atob(value);
-    }
-    if (typeof Buffer !== "undefined") {
-      return Buffer.from(value, "base64").toString("utf8");
-    }
-    throw new Error("base64 decoder unavailable");
-  }
-
-  function configFromArgs(args) {
-    var cfg = {};
-    var scalarKeys = [
-      "enabled",
-      "mode",
-      "latitude",
-      "longitude",
-      "address",
-      "horizontalAccuracy",
-      "verticalAccuracy",
-      "randomRadius",
-      "altitude",
-      "unknownValue4",
-      "motionActivityType",
-      "motionActivityConfidence",
-      "failOpen",
-      "debug",
-      "dumpRaw",
-      "dumpHeaders",
-      "prepareHeaders",
-      "rawLimit"
-    ];
-
-    if (args.config) {
-      cfg = mergeConfig(cfg, JSON.parse(args.config));
-    }
-    if (args.configBase64) {
-      cfg = mergeConfig(cfg, JSON.parse(decodeBase64(args.configBase64)));
-    }
-    for (var i = 0; i < scalarKeys.length; i += 1) {
-      var key = scalarKeys[i];
-      if (Object.prototype.hasOwnProperty.call(args, key)) {
-        cfg[key] = args[key];
-      }
-    }
-    return cfg;
-  }
-
-  function readRemoteConfigCache(url) {
-    if (!url || typeof $persistentStore === "undefined" || !$persistentStore.read) {
-      return null;
-    }
-    try {
-      var raw = $persistentStore.read("location_spoofer_remote_cfg");
-      if (!raw) {
-        return null;
-      }
-      var entry = JSON.parse(raw);
-      if (!entry || entry.url !== url || !entry.data) {
-        return null;
-      }
-      if (Date.now() - entry.ts > 300000) {
-        return null;
-      }
-      return entry.data;
-    } catch (err) {
-      return null;
-    }
-  }
-
-  function writeRemoteConfigCache(url, data) {
-    if (!url || typeof $persistentStore === "undefined" || !$persistentStore.write) {
-      return;
-    }
-    try {
-      $persistentStore.write(
-        "location_spoofer_remote_cfg",
-        JSON.stringify({ url: url, data: data, ts: Date.now() })
-      );
-    } catch (err) {
-      // ignore cache write failures
-    }
-  }
-
-  function fetchRemoteConfig(url, timeout, debug, callback) {
-    if (!url || typeof $httpClient === "undefined" || !$httpClient.get) {
-      callback(null, "http client unavailable");
-      return;
-    }
-    $httpClient.get({ url: url, timeout: timeout || 3000 }, function (error, response, body) {
-      if (error || !body) {
-        callback(null, error || "empty body");
-        return;
-      }
-      try {
-        callback(JSON.parse(body), null);
-      } catch (err) {
-        callback(null, err.message);
-      }
-    });
-  }
-
-  function refreshRemoteConfigCache(url, debug) {
-    fetchRemoteConfig(url, 5000, debug, function (data, err) {
-      if (data) {
-        writeRemoteConfigCache(url, data);
-        return;
-      }
-      if (debug) {
-        console.log("Location spoofer remote config refresh failed: " + err);
-      }
-    });
-  }
-
-  function applyAddressFromCache(cfg, address, debug) {
-    if (!address) {
-      return;
-    }
-    var cached = readGeocodeCache();
-    if (cached && cached.address === address && Number.isFinite(Number(cached.latitude)) && Number.isFinite(Number(cached.longitude))) {
-      cfg.latitude = cached.latitude;
-      cfg.longitude = cached.longitude;
-      if (cached.altitude != null) {
-        cfg.altitude = cached.altitude;
-      }
-      if (debug) {
-        console.log("Location spoofer geocode cache hit: " + address);
-      }
-      return;
-    }
-    if (debug) {
-      console.log("Location spoofer geocode cache miss: " + address + " (use manual lat/lng until cron refreshes)");
-    }
-  }
-
-  function loadRuntimeConfigSync() {
-    var args = readScriptArguments();
-    var cfg = mergeConfig(DEFAULT_CONFIG, configFromArgs(args));
-    var configUrl = resolveConfigUrl(args);
-    var debug = parseBoolean(cfg.debug, false);
-    var address = String(args.address || "").trim();
-
-    applyAddressFromCache(cfg, address, debug);
-
-    if (configUrl) {
-      var remoteCfg = readRemoteConfigCache(configUrl);
-      if (remoteCfg) {
-        cfg = mergeConfig(cfg, remoteCfg);
-        if (debug) {
-          console.log(
-            "Location spoofer remote config cache hit -> " +
-              remoteCfg.latitude +
-              "," +
-              remoteCfg.longitude
-          );
-        }
-      }
-    }
-
-    return { cfg: cfg, configUrl: configUrl, debug: debug };
-  }
-
-  function loadRuntimeConfig(callback) {
-    var loaded = loadRuntimeConfigSync();
-    var cfg = loaded.cfg;
-    var configUrl = loaded.configUrl;
-    var debug = loaded.debug;
-
-    function finish() {
-      try {
-        callback(normalizeConfig(cfg));
-      } catch (err) {
-        if (debug) {
-          console.log("Location spoofer config invalid: " + err.message + " | cfg lat/lng=" + cfg.latitude + "," + cfg.longitude);
-        }
-        if (!Number.isFinite(Number(cfg.latitude)) || !Number.isFinite(Number(cfg.longitude))) {
-          cfg.latitude = DEFAULT_CONFIG.latitude;
-          cfg.longitude = DEFAULT_CONFIG.longitude;
-        }
-        callback(normalizeConfig(cfg));
-      }
-    }
-
-    logScriptArguments(debug);
-
-    if (!configUrl) {
-      finish();
-      return;
-    }
-
-    if (readRemoteConfigCache(configUrl)) {
-      refreshRemoteConfigCache(configUrl, debug);
-      finish();
-      return;
-    }
-
-    if (debug) {
-      console.log("Location spoofer remote config fetching: " + configUrl);
-    }
-    fetchRemoteConfig(configUrl, 3000, debug, function (data, err) {
-      if (data) {
-        writeRemoteConfigCache(configUrl, data);
-        cfg = mergeConfig(cfg, data);
-        if (debug) {
-          console.log(
-            "Location spoofer remote config loaded -> " + data.latitude + "," + data.longitude
-          );
-        }
-      } else if (debug) {
-        console.log("Location spoofer remote config fetch failed: " + err + " (using manual lat/lng)");
-      }
-      finish();
-    });
-  }
-
-  function runMaintenanceCron() {
-    var args = readScriptArguments();
-    var debug = parseBoolean(args.debug, false);
-    var pending = 0;
-
-    function maybeDone() {
-      pending -= 1;
-      if (pending <= 0) {
+      } else {
         $done({});
       }
-    }
-
-    var configUrl = resolveConfigUrl(args);
-    if (configUrl) {
-      pending += 1;
-      fetchRemoteConfig(configUrl, 8000, debug, function (data, err) {
-        if (data) {
-          writeRemoteConfigCache(configUrl, data);
-          if (debug) {
-            console.log(
-              "Location spoofer config cron cached -> " + data.latitude + "," + data.longitude
-            );
-          }
-        } else if (debug) {
-          console.log("Location spoofer config cron failed: " + err);
-        }
-        maybeDone();
-      });
-    }
-
-    var address = String(args.address || "").trim();
-    if (address) {
-      pending += 1;
-      geocodeAddress(address, debug, function () {
-        maybeDone();
-      });
-    }
-
-    if (pending === 0) {
+    } catch (e) {
+      if (typeof console !== "undefined" && console.log) {
+        console.log("spoof error: " + e.message);
+      }
       $done({});
     }
   }
-
-  function runGeocodeCron() {
-    runMaintenanceCron();
-  }
-
-  function headersWithBinaryBody(sourceHeaders, length) {
-    var headers = {};
-    var key;
-    sourceHeaders = sourceHeaders || {};
-    for (key in sourceHeaders) {
-      if (Object.prototype.hasOwnProperty.call(sourceHeaders, key)) {
-        var lower = key.toLowerCase();
-        if (lower !== "content-length" && lower !== "content-encoding" && lower !== "transfer-encoding") {
-          headers[key] = sourceHeaders[key];
-        }
-      }
-    }
-    headers["Content-Type"] = "application/octet-stream";
-    headers["Content-Length"] = String(length);
-    return headers;
-  }
-
-  function setHeader(headers, name, value) {
-    headers = headers || {};
-    var lower = name.toLowerCase();
-    var existingKey = null;
-    for (var key in headers) {
-      if (Object.prototype.hasOwnProperty.call(headers, key) && key.toLowerCase() === lower) {
-        existingKey = key;
-        break;
-      }
-    }
-    headers[existingKey || name] = value;
-    return headers;
-  }
-
-  function prepareRequestHeaders(headers) {
-    return setHeader(headers || {}, "Accept-Encoding", "identity");
-  }
-
-  function donePreparedRequestPassThrough() {
-    var headers = prepareRequestHeaders((typeof $request !== "undefined" && $request.headers) || {});
-    $done({
-      headers: headers
-    });
-  }
-
-  // Decode an HTTP response body that may be gzip/deflate/br encoded.
-  // Shadowrocket/Surge expose $utils.ungzip; Loon falls back to DecompressionStream.
-  function decompressBody(body, contentEncoding) {
-    if (body == null) {
-      return body;
-    }
-    var enc = contentEncoding ? String(contentEncoding).toLowerCase() : "";
-    if (enc === "identity" || enc === "") {
-      return body;
-    }
-    try {
-      if (enc.indexOf("gzip") >= 0 && typeof $utils !== "undefined" && $utils.ungzip) {
-        return $utils.ungzip(body);
-      }
-      if (enc.indexOf("deflate") >= 0 && typeof $utils !== "undefined" && $utils.inflate) {
-        return $utils.inflate(body);
-      }
-      if (enc.indexOf("br") >= 0 && typeof $utils !== "undefined" && $utils.brotliDecompress) {
-        return $utils.brotliDecompress(body);
-      }
-    } catch (err) {
-      if (typeof console !== "undefined") {
-        console.log("Location spoofer decompress failed (" + enc + "): " + err.message);
-      }
-    }
-    return body;
-  }
-
-  function prepareResponseBodySync(config) {
-    var respHeaders = ($response && $response.headers) || {};
-    var contentEncoding = headerValue(respHeaders, "Content-Encoding");
-    var rawRespBody = $response && ($response.body != null ? $response.body : $response.bodyBytes);
-    logHttpDump("response-wire-original", $response, config);
-    logRawDump("response-wire-original", bodyToBytes(rawRespBody), config);
-
-    var bytes = bodyToBytes(rawRespBody);
-    if (!bytes || bytes.length < 2) {
-      return;
-    }
-
-    if (isGzipBytes(bytes) || (contentEncoding && String(contentEncoding).toLowerCase().indexOf("gzip") >= 0)) {
-      var decoded = bodyToBytes(decompressBody(rawRespBody, contentEncoding || "gzip"));
-      if (decoded && decoded.length > 2 && !isGzipBytes(decoded)) {
-        $response.body = decoded;
-        if (config.debug) {
-          console.log("Location spoofer decompressed body: " + bytes.length + " -> " + decoded.length + " bytes");
-        }
-        return;
-      }
-      if (config.debug) {
-        console.log(
-          "Location spoofer gzip body still compressed (len=" +
-            bytes.length +
-            "); ensure http-request prepare script is enabled"
-        );
-      }
-      return;
-    }
-
-    if (contentEncoding) {
-      var plain = bodyToBytes(decompressBody(rawRespBody, contentEncoding));
-      if (plain) {
-        $response.body = plain;
-      }
-    }
-  }
-
-  function headerValue(headers, name) {
-    if (!headers) {
-      return undefined;
-    }
-    var lower = name.toLowerCase();
-    for (var key in headers) {
-      if (Object.prototype.hasOwnProperty.call(headers, key) && key.toLowerCase() === lower) {
-        return headers[key];
-      }
-    }
-    return undefined;
-  }
-
-  function donePassThrough() {
-    $done({});
-  }
-
-  function valueType(value) {
-    if (value == null) {
-      return String(value);
-    }
-    if (value instanceof Uint8Array) {
-      return "Uint8Array";
-    }
-    if (typeof ArrayBuffer !== "undefined" && value instanceof ArrayBuffer) {
-      return "ArrayBuffer";
-    }
-    return typeof value;
-  }
-
-  function valueLength(value) {
-    if (value == null) {
-      return 0;
-    }
-    if (typeof value === "string" || typeof value.length === "number") {
-      return value.length;
-    }
-    if (typeof ArrayBuffer !== "undefined" && value instanceof ArrayBuffer) {
-      return value.byteLength;
-    }
-    return 0;
-  }
-
-  function objectKeys(value) {
-    if (!value || typeof value !== "object") {
-      return "";
-    }
-    var keys = [];
-    for (var key in value) {
-      if (Object.prototype.hasOwnProperty.call(value, key)) {
-        keys.push(key);
-      }
-    }
-    return keys.join(",");
-  }
-
-  function fieldHistogram(fields) {
-    var counts = {};
-    var order = [];
-    for (var i = 0; i < fields.length; i += 1) {
-      var key = String(fields[i].fieldNumber) + "/" + String(fields[i].wireType);
-      if (!counts[key]) {
-        counts[key] = 0;
-        order.push(key);
-      }
-      counts[key] += 1;
-    }
-    var parts = [];
-    for (var j = 0; j < order.length; j += 1) {
-      parts.push(order[j] + "x" + counts[order[j]]);
-    }
-    return parts.join(",");
-  }
-
-  function countFields(fields, fieldNumber) {
-    var count = 0;
-    for (var i = 0; i < fields.length; i += 1) {
-      if (fields[i].fieldNumber === fieldNumber) {
-        count += 1;
-      }
-    }
-    return count;
-  }
-
-  function countCellResponseFields(fields) {
-    var count = 0;
-    for (var i = 0; i < fields.length; i += 1) {
-      if (isCellResponseField(fields[i].fieldNumber)) {
-        count += 1;
-      }
-    }
-    return count;
-  }
-
-  function appleWLocPayloadInspect(payload) {
-    try {
-      var fields = parseFields(payload);
-      var parts = [
-        "payloadLen=" + payload.length,
-        "fields=" + fieldHistogram(fields),
-        "wifi=" + countFields(fields, 2),
-        "cellResp=" + countCellResponseFields(fields),
-        "cellReq=" + countFields(fields, 25),
-        "hasCounts=" + (countFields(fields, 3) + "/" + countFields(fields, 4)),
-        "deviceType=" + countFields(fields, 33),
-        patchedPayloadSummary(payload)
-      ];
-      return parts.join(", ");
-    } catch (err) {
-      return "payload parse failed: " + err.message;
-    }
-  }
-
-  function logRawDump(label, bytes, config) {
-    if (!config.dumpRaw || !bytes) {
-      return;
-    }
-    var limit = config.rawLimit || 0;
-    var emitted = limit > 0 && bytes.length > limit ? bytes.slice(0, limit) : bytes;
-    var encoded = bytesToBase64(emitted);
-    var chunkSize = 3000;
-    var chunks = Math.max(1, Math.ceil(encoded.length / chunkSize));
-    console.log("Location spoofer raw " + label + " base64 begin: len=" + bytes.length + ", emitted=" + emitted.length + ", chunks=" + chunks + ", truncated=" + (emitted.length !== bytes.length));
-    for (var i = 0; i < encoded.length; i += chunkSize) {
-      var chunkIndex = Math.floor(i / chunkSize) + 1;
-      console.log("Location spoofer raw " + label + " base64 chunk " + chunkIndex + "/" + chunks + ": " + encoded.slice(i, i + chunkSize));
-    }
-    console.log("Location spoofer raw " + label + " base64 end");
-  }
-
-  function jsonString(value) {
-    try {
-      return JSON.stringify(value || {});
-    } catch (err) {
-      return "<json-failed:" + err.message + ">";
-    }
-  }
-
-  function logHttpDump(label, message, config) {
-    if (!config.dumpHeaders && !config.dumpRaw) {
-      return;
-    }
-    message = message || {};
-    var request = typeof $request !== "undefined" ? $request : {};
-    var method = message.method || request.method || "<none>";
-    var url = message.url || request.url || "<none>";
-    var status = message.status || message.statusCode || "<none>";
-    console.log("Location spoofer raw " + label + " meta: method=" + method + ", url=" + url + ", status=" + status);
-    if (config.dumpHeaders) {
-      console.log("Location spoofer raw " + label + " headers: " + jsonString(message.headers || {}));
-    }
-  }
-
-  function inspectResponseBytes(bytes, config) {
-    if (!bytes) {
-      console.log("Location spoofer inspect response body unavailable");
-      return;
-    }
-    console.log("Location spoofer inspect response body: len=" + bytes.length + ", head=" + hexPreview(bytes, 48));
-    logRawDump("response", bytes, config);
-    try {
-      var extraction = extractAppleWLocPayload(bytes);
-      console.log("Location spoofer inspect response extraction: kind=" + extraction.kind + ", prefix=" + (extraction.prefix ? hexPreview(extraction.prefix, 8) : "<none>") + ", payloadLen=" + extraction.payload.length + ", suffixLen=" + (extraction.suffix ? extraction.suffix.length : 0));
-      console.log("Location spoofer inspect response payload: " + appleWLocPayloadInspect(extraction.payload));
-    } catch (err) {
-      console.log("Location spoofer inspect response extraction failed: " + err.message);
-      var directFields = tryParseFields(bytes);
-      if (directFields) {
-        console.log("Location spoofer inspect response direct fields: " + fieldHistogram(directFields));
-      }
-    }
-  }
-
-  function inspectRequestBytes(bytes, config) {
-    if (!bytes) {
-      console.log("Location spoofer inspect request body unavailable");
-      return;
-    }
-    console.log("Location spoofer inspect request body: len=" + bytes.length + ", head=" + hexPreview(bytes, 48));
-    logRawDump("request", bytes, config);
-    try {
-      var arpc = parseArpc(bytes);
-      console.log("Location spoofer inspect request arpc: version=" + arpc.version + ", functionId=" + arpc.functionId + ", locale=" + arpc.locale + ", app=" + arpc.appIdentifier + ", os=" + arpc.osVersion + ", payloadLen=" + arpc.payload.length);
-      console.log("Location spoofer inspect request payload: " + appleWLocPayloadInspect(arpc.payload));
-    } catch (err) {
-      console.log("Location spoofer inspect request arpc failed: " + err.message);
-      var directFields = tryParseFields(bytes);
-      if (directFields) {
-        console.log("Location spoofer inspect request direct fields: " + fieldHistogram(directFields));
-      }
-    }
-  }
-
-  function doneInspect(config, hasResponse) {
-    if (hasResponse) {
-      logHttpDump("response", $response, config);
-      inspectResponseBytes(messageBodyToBytes($response), config);
-    } else {
-      logHttpDump("request", $request, config);
-      inspectRequestBytes(messageBodyToBytes($request), config);
-      if (config.prepareHeaders) {
-        donePreparedRequestPassThrough();
-        return;
-      }
-    }
-    donePassThrough();
-  }
-
-  function doneResponseProbe(config) {
-    var response = typeof $response !== "undefined" ? $response : {};
-    var headers = response.headers || {};
-    if (config.debug) {
-      console.log("Location spoofer probe response keys: " + objectKeys(response));
-      console.log("Location spoofer probe headers: status=" + (response.status || response.statusCode || "<none>") + ", content-length=" + (headerValue(headers, "Content-Length") || "<none>") + ", content-type=" + (headerValue(headers, "Content-Type") || "<none>") + ", content-encoding=" + (headerValue(headers, "Content-Encoding") || "none"));
-      console.log("Location spoofer probe body slots: body=" + valueType(response.body) + "/" + valueLength(response.body) + ", bodyBytes=" + valueType(response.bodyBytes) + "/" + valueLength(response.bodyBytes) + ", rawBody=" + valueType(response.rawBody) + "/" + valueLength(response.rawBody) + ", binaryBody=" + valueType(response.binaryBody) + "/" + valueLength(response.binaryBody));
-      var bytes = messageBodyToBytes(response);
-      console.log("Location spoofer probe selected body: " + (bytes ? bytes.length : 0) + " bytes, head=" + (bytes ? hexPreview(bytes, 32) : "<none>"));
-    }
-    donePassThrough();
-  }
-
-  function doneSyntheticResponse(bytes, info) {
-    var headers = headersWithBinaryBody({}, bytes.length);
-    if (info && info.debug) {
-      headers["X-Location-Spoofer-Wifi-Count"] = String(info.wifiCount);
-      headers["X-Location-Spoofer-Cell-Count"] = String(info.cellCount || 0);
-    }
-    if (isLoonRuntime()) {
-      $done({
-        status: 200,
-        headers: headers,
-        body: bytes
-      });
-      return;
-    }
-    $done({
-      response: {
-        status: 200,
-        headers: headers,
-        body: bytes
-      }
-    });
-  }
-
-  function doneRewriteResponse(bytes, info) {
-    var sourceHeaders = typeof $response !== "undefined" ? $response.headers : {};
-    var headers = headersWithBinaryBody(sourceHeaders, bytes.length);
-    if (info && info.debug) {
-      headers["X-Location-Spoofer-Wifi-Count"] = String(info.wifiCount);
-      headers["X-Location-Spoofer-Cell-Count"] = String(info.cellCount || 0);
-    }
-    if (info && info.targetLat != null && info.targetLng != null) {
-      headers["X-Location-Spoofer-Target"] = String(info.targetLat) + "," + String(info.targetLng);
-    }
-    if (isLoonRuntime()) {
-      $done({
-        status: ($response && $response.status) || 200,
-        headers: headers,
-        body: bytes
-      });
-      return;
-    }
-    $done({
-      headers: headers,
-      body: bytes
-    });
-  }
-
-  function continueResponseRewrite(config) {
-    var responseBody = messageBodyToBytes($response);
-    if (!responseBody || responseBody.length < 2) {
-      if (config.debug) {
-        console.log(
-          "Location spoofer response body too short: " +
-            (responseBody ? responseBody.length : 0) +
-            " bytes, head=" +
-            (responseBody ? hexPreview(responseBody) : "<none>")
-        );
-      }
-      donePassThrough();
-      return;
-    }
-    if (config.debug) {
-      console.log("Location spoofer response body: " + responseBody.length + " bytes, head=" + hexPreview(responseBody, 32));
-      if (isLoonRuntime()) {
-        console.log("Location spoofer runtime: Loon");
-      }
-    }
-    logHttpDump("response-original", $response, config);
-    logRawDump("response-original", responseBody, config);
-    var responseResult = spoofAppleResponse(responseBody, config);
-    if (config.debug) {
-      console.log(
-        "Location spoofer patched " +
-          responseResult.wifiCount +
-          " wifi devices, " +
-          responseResult.cellCount +
-          " cell towers, kind=" +
-          responseResult.kind +
-          ", prefix=" +
-          (responseResult.prefix || "<none>") +
-          ", response=" +
-          responseResult.response.length +
-          " bytes"
-      );
-      console.log("Location spoofer patched locations: " + patchedPayloadSummary(responseResult.payload));
-    }
-    logRawDump("response-patched", responseResult.response, config);
-    doneRewriteResponse(responseResult.response, {
-      wifiCount: responseResult.wifiCount,
-      cellCount: responseResult.cellCount,
-      debug: config.debug,
-      targetLat: config.latitude,
-      targetLng: config.longitude
-    });
-  }
-
-  function prepareResponseBody(config) {
-    prepareResponseBodySync(config);
-  }
-
-  function runShadowrocket() {
-    var hasRequest = typeof $request !== "undefined" && $request != null;
-    var hasResponse = typeof $response !== "undefined" && $response != null;
-
-    if (!hasRequest && !hasResponse) {
-      runMaintenanceCron();
-      return;
-    }
-
-    if (hasRequest && !hasResponse) {
-      var prepArgs = readScriptArguments();
-      if (parseBoolean(prepArgs.debug, false)) {
-        console.log("Location spoofer prepare -> Accept-Encoding: identity");
-      }
-      donePreparedRequestPassThrough();
-      return;
-    }
-
-    loadRuntimeConfig(function (config) {
-      try {
-        if (!config.enabled) {
-          donePassThrough();
-          return;
-        }
-
-        if (config.mode === "inspect") {
-          doneInspect(config, hasResponse);
-          return;
-        }
-
-        if (hasResponse) {
-          if (config.debug) {
-            console.log(
-              "Location spoofer intercept -> lat=" +
-                config.latitude +
-                ", lng=" +
-                config.longitude +
-                ", url=" +
-                (($request && $request.url) || "<none>")
-            );
-          }
-          if (config.mode === "probe") {
-            doneResponseProbe(config);
-            return;
-          }
-          if (config.mode !== "response") {
-            donePassThrough();
-            return;
-          }
-          prepareResponseBody(config);
-          continueResponseRewrite(config);
-          return;
-        }
-
-        if (config.mode !== "request") {
-          donePassThrough();
-          return;
-        }
-        var requestBody = messageBodyToBytes($request);
-        if (config.debug) {
-          console.log("Location spoofer request mode body length: " + (requestBody ? requestBody.length : 0));
-        }
-        if (!requestBody) {
-          if (config.debug) {
-            console.log("Location spoofer request body unavailable");
-          }
-          donePassThrough();
-          return;
-        }
-        if (requestBody.length < 2) {
-          if (config.debug) {
-            console.log("Location spoofer request body too short: " + requestBody.length + " bytes, head=" + hexPreview(requestBody));
-          }
-          donePassThrough();
-          return;
-        }
-        logHttpDump("request-original", $request, config);
-        logRawDump("request-original", requestBody, config);
-        var requestResult = spoofArpcRequest(requestBody, config);
-        if (config.debug) {
-          console.log("Location spoofer request synthetic response: patched " + requestResult.wifiCount + " wifi devices, " + requestResult.cellCount + " cell towers, response=" + requestResult.response.length + " bytes");
-          console.log("Location spoofer patched locations: " + patchedPayloadSummary(requestResult.payload));
-        }
-        logRawDump("request-synthetic-response", requestResult.response, config);
-        doneSyntheticResponse(requestResult.response, {
-          wifiCount: requestResult.wifiCount,
-          cellCount: requestResult.cellCount,
-          debug: config.debug
-        });
-      } catch (err) {
-        if (config.debug) {
-          var diagBody = hasResponse ? messageBodyToBytes($response) : messageBodyToBytes($request);
-          console.log("Location spoofer failed: " + err.message + " | bodyLen=" + (diagBody ? diagBody.length : 0) + " head=" + (diagBody ? hexPreview(diagBody, 32) : "<none>"));
-        }
-        if (config.failOpen !== false) {
-          donePassThrough();
-          return;
-        }
-        $done({
-          response: {
-            status: "HTTP/1.1 500 Internal Server Error",
-            headers: { "Content-Type": "text/plain" },
-            body: "location spoofer failed: " + err.message
-          }
-        });
-      }
-    });
-  }
-
-  var api = {
-    DEFAULT_CONFIG: DEFAULT_CONFIG,
-    APPLE_WLOC_PREFIX: APPLE_WLOC_PREFIX,
-    APPLE_WLOC_MARKER: APPLE_WLOC_MARKER,
-    bodyToBytes: bodyToBytes,
-    messageBodyToBytes: messageBodyToBytes,
-    hexPreview: hexPreview,
-    bytesToBinaryString: bytesToBinaryString,
-    bytesToBase64: bytesToBase64,
-    binaryStringToBytes: binaryStringToBytes,
-    concatBytes: concatBytes,
-    readUInt16BE: readUInt16BE,
-    writeUInt16BE: writeUInt16BE,
-    encodeVarintUnsigned: encodeVarintUnsigned,
-    encodeVarintSignedInt64: encodeVarintSignedInt64,
-    decodeVarint: decodeVarint,
-    makeVarintField: makeVarintField,
-    makeLengthDelimitedField: makeLengthDelimitedField,
-    parseFields: parseFields,
-    tryParseFields: tryParseFields,
-    firstFieldByNumber: firstFieldByNumber,
-    locationSummary: locationSummary,
-    patchedPayloadSummary: patchedPayloadSummary,
-    coordToInt: coordToInt,
-    normalizeConfig: normalizeConfig,
-    patchLocation: patchLocation,
-    patchWifiDevice: patchWifiDevice,
-    patchCellTower: patchCellTower,
-    patchAppleWLocPayload: patchAppleWLocPayload,
-    parseArpc: parseArpc,
-    serializeArpc: serializeArpc,
-    buildAppleWLocResponse: buildAppleWLocResponse,
-    extractAppleWLocPayload: extractAppleWLocPayload,
-    spoofArpcRequest: spoofArpcRequest,
-    spoofAppleResponse: spoofAppleResponse,
-    parseArgumentString: parseArgumentString,
-    readScriptArguments: readScriptArguments,
-    geocodeAddress: geocodeAddress,
-    prepareRequestHeaders: prepareRequestHeaders
-  };
-
-  if (typeof module !== "undefined" && module.exports) {
-    module.exports = api;
-  } else {
-    runShadowrocket();
-  }
-}());
+})();
