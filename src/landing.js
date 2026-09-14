@@ -7,7 +7,7 @@ export function getLandingHtml(origin) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>中国大陆微信LLME-love</title>
+<title>中国大陆微信LLME-love可乐加糖</title>
 <meta name="theme-color" content="#0a0c11">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <style>
@@ -84,7 +84,7 @@ body {
 }
 .btn-green-map:active { filter:brightness(1.12); transform:scale(.98); }
 
-/* 完全重构为深色暗黑卡片风格的微信联系名片 */
+/* 深度适配暗黑美学的微信名片区 */
 .wx-card-dark {
   background: linear-gradient(180deg, rgba(25,30,40,.82), rgba(18,22,29,.85));
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
@@ -119,6 +119,7 @@ body {
   object-fit: cover;
   border: 1px solid rgba(255,255,255,.15);
   box-shadow: 0 4px 12px rgba(0,0,0,.3);
+  background: #2563eb;
 }
 .wx-profile-meta h3 {
   font-size: 16px;
@@ -132,7 +133,7 @@ body {
   margin-top: 3px;
 }
 
-/* 保证扫码成功的纯白正方形背景外框（带科技微光边框约束） */
+/* 纯白高对比扫码区外框 */
 .wx-qr-box {
   background: #ffffff;
   padding: 14px;
@@ -164,7 +165,7 @@ body {
     <div class="app-icon">
       <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
     </div>
-    <h1>中国大陆微信LLME-love</h1>
+    <h1>中国大陆微信LLME-love可乐加糖</h1>
     <p>模块管理 & 地图选点面板</p>
   </div>
 
@@ -181,12 +182,11 @@ body {
     <a class="btn-primary" id="srBtn" href="shadowrocket://config/add/remote?url=${encodeURIComponent(fullModuleUrl)}">一键导入 Shadowrocket</a>
   </div>
 
-  <!-- 放置在首页靠后高频触达的联系位置 -->
   <div class="section-title" style="margin-top:28px;">交流与支持</div>
   <div class="wx-card-dark">
     <div class="wx-profile-header">
-      <!-- 建议替换为你实际导出的头像图片路径或 Base64 -->
-      <img class="wx-avatar-pic" src="/wechat-avatar.jpg" alt="可乐加糖头像" onerror="this.style.background='linear-gradient(135deg,#2563eb,#1d4ed8)'">
+      <!-- 内联 SVG 头像（蓝色登山/风景风格意向），杜绝 404 -->
+      <img class="wx-avatar-pic" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%231d4ed8'/><path d='M10 80 L40 45 L65 70 L85 50 L100 80 Z' fill='%23059669' opacity='0.7'/><circle cx='70' cy='30' r='10' fill='%23fbbf24'/></svg>" alt="可乐加糖头像">
       <div class="wx-profile-meta">
         <h3>可乐加糖</h3>
         <p>浙江 杭州</p>
@@ -194,8 +194,8 @@ body {
     </div>
     
     <div class="wx-qr-box">
-      <!-- 保持原绿码二维码结构与中心绿色微信图标，内联白框防色反差导致扫不出 -->
-      <img src="/wechat-qrcode.png" alt="微信加好友二维码" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\\'color:#333;font-size:12px;text-align:center\\'>请放真实二维码 src</span>'">
+      <!-- 将你的二维码图片转成 Base64 替换下方 src="data:image/png;base64,..." 或放于公开能访问的绝对/相对路径 -->
+      <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23fff'/><rect x='10' y='10' width='25' height='25' fill='none' stroke='%2322c55e' stroke-width='5'/><rect x='18' y='18' width='9' height='9' fill='%2322c55e'/><rect x='65' y='10' width='25' height='25' fill='none' stroke='%2322c55e' stroke-width='5'/><rect x='73' y='18' width='9' height='9' fill='%2322c55e'/><rect x='10' y='65' width='25' height='25' fill='none' stroke='%2322c55e' stroke-width='5'/><rect x='18' y='73' width='9' height='9' fill='%2322c55e'/><path d='M40,40 h20 v20 h-20 z' fill='%2322c55e'/><text x='50' y='80' font-size='10' text-anchor='middle' fill='%23666'>扫码加好友</text></svg>" alt="微信加好友二维码">
     </div>
     
     <div class="wx-tips">扫二维码，添加我为朋友。</div>
