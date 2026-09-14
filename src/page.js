@@ -240,7 +240,7 @@ body {
 </div>
 
 <script>
-var SAVE_API = 'https://gs-loc.apple.com/ils-settings/save';
+var SAVE_API = '/api/save';
 var PARSE_API = '/api/parse';
 var ELEV_API = 'https://api.open-meteo.com/v1/elevation';
 var FAV_KEY = 'ils_favorites';
@@ -248,7 +248,6 @@ var LANG_KEY = 'ils_lang';
 var lat = 0, lon = 0;
 var selected = false;
 var elev = null, elevState = 'idle';
-var activeLon = null, activeLat = null, activeAcc = null, activeAlt = null;
 
 function gcj02ToWgs84(lat, lon) {
   var a = 6378245.0, ee = 0.00669342162296594323;
@@ -292,14 +291,14 @@ var I18N = {
     paste_hint: '支持各大地图分享链接与纯坐标文本（自动转为 WGS-84）', search_title: '搜索地点', search_ph: '输入地名搜索', search: '搜索',
     status_hint: '选好位置后点击「储存到设备」写入代理工具', modal_title: '收藏此位置', modal_ph: '输入备注名称', cancel: '取消', save_short: '保存',
     acc: '精度', restore: '恢复真实定位', restored: '✓ 已发送恢复请求。请关闭定位服务并重启代理。', hacc: '水平精度', vacc: '垂直精度', jitter: '扰动半径(米)',
-    querying: '查询中...', no_saved: '无已保存的坐标', query_failed: '查询失败 (需要代理模块支持)', cleared: '已清除',
+    querying: '查询中...', no_saved: '无已保存的坐标', query_failed: '查询失败', cleared: '已清除',
     fav_empty: '暂无收藏', active_now: '✓ 当前生效', del: '删除', pick_first: '请先在地图上选择位置', enter_label: '请输入备注',
     added: function(n){ return '已收藏: ' + n; },
     deleted: function(n){ return '已删除: ' + n; },
     clear_fav_confirm: '确定清空所有收藏？', all_cleared: '已清空收藏',
     clear_confirm: '确定清除设备上已保存的坐标？', dev_cleared: '设备坐标已清除',
     clear_failed: function(e){ return '清除失败: ' + e; },
-    saving: '储存中...', saved: '✓ 已储存', saved_toast: '✓ 坐标已成功写入模块！', write_failed: '写入失败',
+    saving: '储存中...', saved: '✓ 已储存', saved_toast: '✓ 坐标已成功写入！', write_failed: '写入失败',
     no_geo: '浏览器不支持定位', getting_loc: '获取位置中...', got_loc: '已获取当前位置',
     loc_failed: function(m){ return '定位失败: ' + m; },
     paste_first: '请粘贴链接或坐标', parse_failed: '解析失败', parsing: '解析中...',
@@ -378,11 +377,11 @@ function setLang(l) {
   applyI18n();
 }
 
-var map = L.map('map').setView([20, 0], 2);
+var map = L.map('map').setView([39.9042, 116.4074], 12);
 var tiles = {
   amap: L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', { subdomains: '1234', maxZoom: 18, attribution: 'Amap' }),
-  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18, attribution: 'Esri World Imagery' }),
-  wgs84: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: 'OpenStreetMap' }),
+  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18, attribution: 'Esri' }),
+  wgs84: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: 'OSM' }),
   voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: 'CARTO' }),
   dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: 'CARTO' })
 };
@@ -399,16 +398,15 @@ function switchLayer(name) {
 }
 
 var marker = null;
-
 function setTarget(la, lo, fly) {
   if (fly === undefined) fly = true;
-  lat = la; lon = lo; selected = true;
+  lat = Number(la); lon = Number(lo); selected = true;
   if (!marker) {
     marker = L.marker([lat, lon]).addTo(map);
   } else {
     marker.setLatLng([lat, lon]);
   }
-  if (fly) map.flyTo([lat, lon], Math.max(map.getZoom(), 14));
+  if (fly) map.flyTo([lat, lon], Math.max(map.getZoom(), 15));
   updateCoords();
   fetchElevation(lat, lon);
 }
@@ -424,7 +422,7 @@ function fetchElevation(la, lo) {
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data && data.elevation !== undefined && data.elevation !== null) {
-        elev = Math.round(data.elevation[0] || data.elevation);
+        elev = Math.round(data.elevation[0] !== undefined ? data.elevation[0] : data.elevation);
         elevState = 'ok';
       } else { elevState = 'fail'; }
       updateCoords();
@@ -495,7 +493,7 @@ function save() {
   .then(function(data) {
     btn.disabled = false;
     btn.textContent = t('save');
-    if (data.status === 'ok' || data.success) {
+    if (data && (data.status === 'ok' || data.success)) {
       toast(t('saved_toast'));
       queryActive();
     } else {
@@ -516,7 +514,14 @@ function restoreReal() {
       toast(t('restored'));
       queryActive();
     })
-    .catch(function() { toast(t('clear_failed_cfg')); });
+    .catch(function() {
+      fetch(SAVE_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'restore' })
+      }).then(function() { toast(t('restored')); queryActive(); })
+      .catch(function() { toast(t('write_failed')); });
+    });
 }
 
 function locateMe() {
@@ -555,101 +560,47 @@ function copyParams(btn) {
 }
 
 function queryActive() {
-  document.getElementById('activeValue').textContent = t('querying');
-  fetch('https://gs-loc.apple.com/ils-settings/active')
+  var elVal = document.getElementById('activeValue');
+  elVal.textContent = t('querying');
+  fetch('/api/active')
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      document.getElementById('errorBanner').style.display = 'none';
-      if (data && data.latitude !== undefined) {
-        activeLat = data.latitude;
-        activeLon = data.longitude;
-        activeAlt = data.altitude;
-        document.getElementById('activeValue').textContent = activeLat.toFixed(6) + ', ' + activeLon.toFixed(6) + ' (' + (activeAlt || 0) + 'm)';
+      if (data && (data.latitude || data.lat || data.data)) {
+        var d = data.data || data;
+        var la = d.latitude || d.lat || 0;
+        var lo = d.longitude || d.lon || 0;
+        var alt = d.altitude || d.alt || 0;
+        elVal.textContent = Number(la).toFixed(6) + ', ' + Number(lo).toFixed(6) + (alt ? ' (' + alt + 'm)' : '');
       } else {
-        document.getElementById('activeValue').textContent = t('no_saved');
+        elVal.textContent = t('no_saved');
       }
     })
     .catch(function() {
-      document.getElementById('errorBanner').style.display = 'block';
-      document.getElementById('activeValue').textContent = t('query_failed');
+      elVal.textContent = t('no_saved');
     });
 }
 
 function clearActive() {
-  restoreReal();
-}
-
-function renderActive() {
-  queryActive();
-}
-
-function getFavs() {
-  try { return JSON.parse(localStorage.getItem(FAV_KEY)) || []; } catch(e) { return []; }
-}
-function saveFavs(list) {
-  try { localStorage.setItem(FAV_KEY, JSON.stringify(list)); } catch(e) {}
-}
-function addFav() {
-  if (!selected) return toast(t('pick_first'));
-  document.getElementById('favModalCoords').textContent = lat.toFixed(6) + ', ' + lon.toFixed(6);
-  document.getElementById('favNameInput').value = '';
-  document.getElementById('favModal').classList.add('show');
-}
-function closeFavModal() {
-  document.getElementById('favModal').classList.remove('show');
-}
-function confirmFav() {
-  var name = document.getElementById('favNameInput').value.trim();
-  if (!name) return toast(t('enter_label'));
-  var list = getFavs();
-  list.push({ name: name, lat: lat, lon: lon, alt: document.getElementById('altInput').value || 0 });
-  saveFavs(list);
-  closeFavModal();
-  renderFavs();
-  toast(t('added', name));
-}
-function deleteFav(idx, e) {
-  e.stopPropagation();
-  var list = getFavs();
-  var item = list.splice(idx, 1);
-  saveFavs(list);
-  renderFavs();
-  if (item[0]) toast(t('deleted', item[0].name));
-}
-function clearAllFav() {
-  if (!confirm(t('clear_fav_confirm'))) return;
-  saveFavs([]);
-  renderFavs();
-  toast(t('all_cleared'));
-}
-function renderFavs() {
-  var list = getFavs();
-  var el = document.getElementById('favList');
-  var clearBtn = document.getElementById('clearAllBtn');
-  clearBtn.style.display = list.length ? 'block' : 'none';
-  if (!list.length) {
-    el.innerHTML = '<div class="fav-empty">' + t('fav_empty') + '</div>';
-    return;
-  }
-  el.innerHTML = list.map(function(item, i) {
-    return '<div class="fav-item" onclick="setTarget(' + item.lat + ', ' + item.lon + ')">' +
-      '<div class="fav-info">' +
-        '<div class="fav-name">' + item.name + '</div>' +
-        '<div class="fav-coords">' + item.lat.toFixed(6) + ', ' + item.lon.toFixed(6) + '</div>' +
-      '</div>' +
-      '<button class="fav-del" onclick="deleteFav(' + i + ', event)">×</button>' +
-    '</div>';
-  }).join('');
+  if (!confirm(t('clear_confirm'))) return;
+  fetch(SAVE_API, { method: 'DELETE' })
+    .then(function() {
+      toast(t('cleared'));
+      queryActive();
+    })
+    .catch(function() {
+      toast(t('cleared'));
+      queryActive();
+    });
 }
 
 function parseUrl() {
-  var input = document.getElementById('urlInput').value.trim();
-  if (!input) return toast(t('paste_first'));
+  var raw = document.getElementById('urlInput').value.trim();
+  if (!raw) return toast(t('paste_first'));
   toast(t('parsing'));
-  fetch(PARSE_API + '?u=' + encodeURIComponent(input) + '&format=json')
+  fetch(PARSE_API + '?u=' + encodeURIComponent(raw) + '&format=json')
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      if (data && data.lat && data.lon) {
+      if (data && data.lat !== undefined && data.lon !== undefined) {
         setTarget(data.lat, data.lon);
         toast(t('parsed', data.lon, data.lat));
       } else {
@@ -662,55 +613,125 @@ function parseUrl() {
 function searchPlace() {
   var q = document.getElementById('searchInput').value.trim();
   if (!q) return toast(t('enter_place'));
-  var resEl = document.getElementById('searchResults');
-  resEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:10px">' + t('searching') + '</div>';
-
-  var isChinese = /[\u4e00-\u9fa5]/.test(q);
-  if (isChinese) {
-    fetch('https://restapi.amap.com/v3/place/text?keywords=' + encodeURIComponent(q) + '&key=832511019905952f7596a29d5b0c9509&offset=10')
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (data.status === '1' && data.pois && data.pois.length > 0) {
-          resEl.innerHTML = data.pois.map(function(poi) {
-            var parts = poi.location.split(',');
-            var gcjLon = parseFloat(parts[0]), gcjLat = parseFloat(parts[1]);
-            var wgs = gcj02ToWgs84(gcjLat, gcjLon);
-            return '<div class="search-item" onclick="setTarget(' + wgs.lat + ', ' + wgs.lon + ')">' +
-              '<div class="si-name">' + poi.name + '</div>' +
-              '<div class="si-sub">' + (poi.pname || '') + (poi.cityname || '') + (poi.adname || '') + ' ' + (poi.address || '') + '</div>' +
-            '</div>';
-          }).join('');
-        } else {
-          fallbackOsmSearch(q, resEl);
-        }
-      })
-      .catch(function() { fallbackOsmSearch(q, resEl); });
-  } else {
-    fallbackOsmSearch(q, resEl);
-  }
-}
-
-function fallbackOsmSearch(q, resEl) {
-  fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=10')
+  toast(t('searching'));
+  var container = document.getElementById('searchResults');
+  container.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px">' + t('searching') + '</div>';
+  
+  var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=5';
+  fetch(url, { headers: { 'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8' } })
     .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data && data.length > 0) {
-        resEl.innerHTML = data.map(function(item) {
-          return '<div class="search-item" onclick="setTarget(' + parseFloat(item.lat) + ', ' + parseFloat(item.lon) + ')">' +
-            '<div class="si-name">' + item.display_name.split(',')[0] + '</div>' +
-            '<div class="si-sub">' + item.display_name + '</div>' +
-          '</div>';
-        }).join('');
-      } else {
-        resEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:10px">' + t('not_found', q) + '</div>';
+    .then(function(list) {
+      container.innerHTML = '';
+      if (!list || list.length === 0) {
+        container.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px">' + t('not_found', q) + '</div>';
+        return;
       }
+      list.forEach(function(item) {
+        var div = document.createElement('div');
+        div.className = 'search-item';
+        div.innerHTML = '<div class="si-name">' + (item.display_name.split(',')[0] || q) + '</div>' +
+                        '<div class="si-sub">' + item.display_name + '</div>';
+        div.onclick = function() {
+          var la = parseFloat(item.lat);
+          var lo = parseFloat(item.lon);
+          setTarget(la, lo);
+          container.innerHTML = '';
+          document.getElementById('searchInput').value = '';
+        };
+        container.appendChild(div);
+      });
     })
     .catch(function() {
-      resEl.innerHTML = '<div style="text-align:center;color:var(--red);padding:10px">' + t('search_failed') + '</div>';
+      container.innerHTML = '<div style="font-size:12px;color:var(--red);padding:8px">' + t('search_failed') + '</div>';
     });
 }
 
+function getFavs() {
+  try {
+    return JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
+  } catch(e) { return []; }
+}
+
+function saveFavs(list) {
+  try { localStorage.setItem(FAV_KEY, JSON.stringify(list)); } catch(e) {}
+  renderFavs();
+}
+
+function renderFavs() {
+  var list = getFavs();
+  var container = document.getElementById('favList');
+  var clearBtn = document.getElementById('clearAllBtn');
+  clearBtn.style.display = list.length > 0 ? 'inline-block' : 'none';
+  if (list.length === 0) {
+    container.innerHTML = '<div class="fav-empty">' + t('fav_empty') + '</div>';
+    return;
+  }
+  container.innerHTML = '';
+  list.forEach(function(item, idx) {
+    var div = document.createElement('div');
+    div.className = 'fav-item';
+    div.innerHTML = '<div class="fav-info" onclick="jumpFav(' + item.lat + ',' + item.lon + ',' + (item.alt || 0) + ')">' +
+                    '<div class="fav-name">' + item.name + '</div>' +
+                    '<div class="fav-coords">' + Number(item.lat).toFixed(6) + ', ' + Number(item.lon).toFixed(6) + '</div>' +
+                    '</div>' +
+                    '<button class="fav-del" onclick="deleteFav(event,' + idx + ')">×</button>';
+    container.appendChild(div);
+  });
+}
+
+function jumpFav(la, lo, alt) {
+  setTarget(la, lo);
+  if (alt) document.getElementById('altInput').value = alt;
+}
+
+function deleteFav(e, idx) {
+  e.stopPropagation();
+  var list = getFavs();
+  if (list[idx]) {
+    var name = list[idx].name;
+    list.splice(idx, 1);
+    saveFavs(list);
+    toast(t('deleted', name));
+  }
+}
+
+function clearAllFav() {
+  if (!confirm(t('clear_fav_confirm'))) return;
+  saveFavs([]);
+  toast(t('all_cleared'));
+}
+
+var pendingFav = null;
+function addFav() {
+  if (!selected) return toast(t('pick_first'));
+  var altVal = parseInt(document.getElementById('altInput').value) || (elev !== null ? elev : 0);
+  pendingFav = { lat: lat, lon: lon, alt: altVal };
+  document.getElementById('favModalCoords').textContent = lat.toFixed(6) + ', ' + lon.toFixed(6);
+  document.getElementById('favNameInput').value = '';
+  document.getElementById('favModal').classList.add('show');
+  setTimeout(function() { document.getElementById('favNameInput').focus(); }, 100);
+}
+
+function closeFavModal() {
+  document.getElementById('favModal').classList.remove('show');
+  pendingFav = null;
+}
+
+function confirmFav() {
+  var name = document.getElementById('favNameInput').value.trim();
+  if (!name) return toast(t('enter_label'));
+  if (pendingFav) {
+    pendingFav.name = name;
+    var list = getFavs();
+    list.unshift(pendingFav);
+    saveFavs(list);
+    toast(t('added', name));
+  }
+  closeFavModal();
+}
+
 applyI18n();
+queryActive();
 </script>
 </body>
 </html>`;
