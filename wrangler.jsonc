@@ -1,7 +1,6 @@
-name = "ios-loc-spoofer"
-main = "src/index.js"
-compatibility_date = "2026-09-14"
-
-[[kv_namespaces]]
-binding = "KV"
-id = "269ae78664c442c5bed345133363b50f"
+{
+  "name": "male",
+  "main": "src/index.js",
+  "compatibility_date": "2024-01-01",
+  "compatibility_flags": ["nodejs_compat"]
+}
