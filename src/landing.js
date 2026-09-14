@@ -84,67 +84,74 @@ body {
 }
 .btn-green-map:active { filter:brightness(1.12); transform:scale(.98); }
 
-/* 微信适配深色名片样式 */
-.wx-card {
+/* 复刻原图深色化微信名片区 */
+.wx-card-wrapper {
+  background: linear-gradient(180deg, rgba(25,30,40,.72), rgba(18,22,29,.72));
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 24px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
+  box-shadow: 0 8px 28px rgba(0,0,0,.34);
 }
-.wx-header {
+.wx-user-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 18px;
   width: 100%;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
-  text-align: left;
+  margin-bottom: 22px;
 }
-.wx-avatar {
+.wx-avatar-box {
   width: 48px;
   height: 48px;
-  border-radius: 10px;
-  object-fit: cover;
-  border: 1px solid rgba(255,255,255,.1);
-  background: #2563eb;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,.12);
 }
-.wx-info h3 { font-size: 15px; font-weight: 700; color: var(--txt); }
-.wx-info p { font-size: 12px; color: var(--muted); margin-top: 2px; }
-
-.wx-qrcode-box {
-  width: 190px;
-  height: 190px;
-  background: #ffffff;
-  padding: 12px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 20px rgba(0,0,0,.4);
-  position: relative;
-  margin-bottom: 14px;
-}
-.wx-qrcode-box svg {
+.wx-avatar-box img {
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
-.wx-logo-badge {
-  position: absolute;
-  width: 36px;
-  height: 36px;
-  background: #07c160;
-  border-radius: 8px;
+.wx-user-text h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--txt);
+  line-height: 1.3;
+}
+.wx-user-text p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+/* 白底原色二维码容器，保证扫码成功率 */
+.wx-code-container {
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 250px;
+  aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,.3);
-  border: 2px solid #fff;
+  box-shadow: 0 6px 24px rgba(0,0,0,.35);
+  margin-bottom: 18px;
 }
-.wx-logo-badge svg { width: 22px; height: 22px; fill: #fff; }
-.wx-footer-tip {
+.wx-code-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.wx-bottom-txt {
   font-size: 13px;
   color: var(--muted);
+  letter-spacing: 0.2px;
 }
 </style>
 </head>
@@ -172,32 +179,26 @@ body {
     <a class="btn-primary" id="srBtn" href="shadowrocket://config/add/remote?url=${encodeURIComponent(fullModuleUrl)}">一键导入 Shadowrocket</a>
   </div>
 
-  <!-- 适配整体暗黑/青蓝配色的微信联系卡片 -->
-  <div class="section-title" style="margin-top:24px;">联系与支持</div>
-  <div class="card wx-card">
-    <div class="wx-header">
-      <img class="wx-avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%231d4ed8'/><circle cx='50' cy='38' r='18' fill='%23fff'/><path d='M20 85 C20 65, 80 65, 80 85 Z' fill='%23fff'/></svg>" alt="头像">
-      <div class="wx-info">
+  <!-- 还原并适配深色环境的微信名片组件 -->
+  <div class="section-title" style="margin-top:24px;">微信联系</div>
+  <div class="wx-card-wrapper">
+    <div class="wx-user-row">
+      <!-- 建议将原图头像切出来转成 base64 填入 src -->
+      <div class="wx-avatar-box">
+        <img src="/wechat-avatar.jpg" alt="头像" onerror="this.style.background='#2563eb'">
+      </div>
+      <div class="wx-user-text">
         <h3>可乐加糖</h3>
         <p>浙江 杭州</p>
       </div>
     </div>
     
-    <div class="wx-qrcode-box">
-      <!-- 几何化替代原图复杂黑白码，实际可替换为你的二维码图片或SVG -->
-      <svg viewBox="0 0 100 100" shape-rendering="crispEdges">
-        <rect width="100" height="100" fill="#fff"/>
-        <path d="M5,5 h30 v30 h-30 z M10,10 h20 v20 h-20 z M15,15 h10 v10 h-10 z" fill="#000"/>
-        <path d="M65,5 h30 v30 h-30 z M70,10 h20 v20 h-20 z M75,15 h10 v10 h-10 z" fill="#000"/>
-        <path d="M5,65 h30 v30 h-30 z M10,70 h20 v20 h-20 z M15,75 h10 v10 h-10 z" fill="#000"/>
-        <path d="M40,10 h5 v5 h-5 z M55,5 h5 v5 h-5 z M45,20 h10 v5 h-10 z M10,40 h5 v10 h-5 z M25,45 h5 v5 h-5 z M40,40 h20 v20 h-20 z M65,40 h5 v10 h-5 z M80,50 h10 v5 h-10 z M40,70 h5 v5 h-5 z M55,65 h10 v5 h-10 z M70,75 h15 v15 h-15 z" fill="#000"/>
-      </svg>
-      <div class="wx-logo-badge">
-        <svg viewBox="0 0 24 24"><path d="M8.5,13.5A1.5,1.5 0 0,1 7,12A1.5,1.5 0 0,1 8.5,10.5A1.5,1.5 0 0,1 10,12A1.5,1.5 0 0,1 8.5,13.5M15.5,13.5A1.5,1.5 0 0,1 14,12A1.5,1.5 0 0,1 15.5,10.5A1.5,1.5 0 0,1 17,12A1.5,1.5 0 0,1 15.5,13.5M12,2A10,10 0 0,0 2,12C2,14.66 3.05,17.06 4.76,18.82L3.5,22L6.87,20.93C8.42,21.6 10.15,22 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>
-      </div>
+    <div class="wx-code-container">
+      <!-- 保持白底及原图绿码结构，请将 src 替换为实际二维码图片或对应 base64 -->
+      <img src="/wechat-qr.jpg" alt="微信二维码" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\\'color:%23666;font-size:12px;text-align:center\\'>请放真实二维码图片 src</span>'">
     </div>
     
-    <div class="wx-footer-tip">扫二维码，添加我为朋友。</div>
+    <div class="wx-bottom-txt">扫二维码，添加我为朋友。</div>
   </div>
 </div>
 </body>
