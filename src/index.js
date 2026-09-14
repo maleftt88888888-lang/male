@@ -11,22 +11,23 @@ app.get("/", (c) => {
   c.header("Cache-Control", "no-cache");
   return c.html(getLandingHtml());
 });
+
 app.get("/picker", (c) => {
   c.header("Cache-Control", "no-cache");
   return c.html(getPageHtml());
 });
 
-/* ---- PWA: manifest + icons (enables "Add to Home Screen") ---- */
+/* ---- PWA: manifest + icons ---- */
 const MANIFEST = {
   name: "iOS Location Spoofer",
   short_name: "iOSLoc",
-  description: "Stateless map picker for iOS Location Spoofer (WGS-84 + altitude).",
+  description: "Stateless map picker for iOS Location Spoofer.",
   start_url: "/picker",
   scope: "/",
   display: "standalone",
   orientation: "portrait",
-  background_color: "#f2f2f7",
-  theme_color: "#007aff",
+  background_color: "#0a0c11",
+  theme_color: "#17c3cf",
   icons: [
     { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
     { src: "/icon-180.png", sizes: "180x180", type: "image/png", purpose: "any" },
@@ -42,18 +43,15 @@ app.get("/icon-180.png", (c) => c.body(b64ToBytes(ICON_180_B64), 200, { "Content
 app.get("/icon-512.png", (c) => c.body(b64ToBytes(ICON_512_B64), 200, { "Content-Type": "image/png", "Cache-Control": IMG_CACHE }));
 app.get("/favicon.ico", (c) => c.body(ICON_SVG, 200, { "Content-Type": "image/svg+xml", "Cache-Control": IMG_CACHE }));
 
-/* ---- Self-hosted on-device module ----
-   Serve the two module scripts + a subscribable manifest so the whole stateless
-   setup runs from this worker with NO GitHub dependency. The manifest self-references
-   whatever domain served it (workers.dev URL or a custom domain). */
+/* ---- Modules ---- */
 const JS_HEADERS = { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "public, max-age=3600" };
 app.get("/location-spoofer.js", (c) => c.body(b64ToBytes(LOCATION_SPOOFER_B64), 200, JS_HEADERS));
 app.get("/location-settings.js", (c) => c.body(b64ToBytes(LOCATION_SETTINGS_B64), 200, JS_HEADERS));
 app.get("/location-spoofer-qx.js", (c) => c.body(b64ToBytes(LOCATION_SPOOFER_QX_B64), 200, JS_HEADERS));
 
 function sgmodule(origin) {
-  return String.raw`#!name=iOS Location Spoofer (Stateless)
-#!desc=任何售卖本项目/模块的都是骗子，请立即联系退款。无状态版：坐标写入每台设备各自的本机存储、可公开共用、多人互不覆盖。搭配选点页使用。适用于 Shadowrocket / Surge / Egern。
+  return String.raw`#!name=iOS Location Spoofer
+#!desc=iOS Location Spoofer 模块，支持 Shadowrocket / Surge / Egern。
 #!homepage=${origin}
 
 [Script]
@@ -63,9 +61,10 @@ iLS Settings = type=http-request,pattern=^https?:\/\/gs-loc(?:-cn)?\.apple\.com\
 [MITM]
 hostname = %APPEND% gs-loc.apple.com, gs-loc-cn.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com`;
 }
+
 function stoverride(origin) {
-  return String.raw`name: iOS Location Spoofer (Stateless)
-desc: "任何售卖本项目/模块的都是骗子，请立即联系退款。iOS Location Spoofer 无状态版 (Stash)"
+  return String.raw`name: iOS Location Spoofer
+desc: "iOS Location Spoofer 模块 (Stash)"
 homepage: ${origin}
 
 http:
@@ -95,9 +94,10 @@ script-providers:
     url: ${origin}/location-settings.js
     interval: 86400`;
 }
+
 function lnplugin(origin) {
-  return String.raw`#!name=iOS Location Spoofer (Stateless)
-#!desc=任何售卖本项目/模块的都是骗子，请立即联系退款。无状态版，配合选点页使用。Loon 插件。
+  return String.raw`#!name=iOS Location Spoofer
+#!desc=iOS Location Spoofer 插件 (Loon)。
 #!homepage=${origin}
 
 [Script]
@@ -107,11 +107,10 @@ http-request ^https?:\/\/gs-loc(?:-cn)?\.apple\.com\/ils-settings\/ script-path=
 [MITM]
 hostname = gs-loc.apple.com, gs-loc-cn.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com`;
 }
-// Quantumult X has NO module/plugin system — it uses a "rewrite" reference. QX also does
-// not auto-merge MITM hostnames the way Surge modules do, so the user must add them manually.
+
 function qxsnippet(origin) {
-  return String.raw`#!name=iOS Location Spoofer (Stateless)
-#!desc=任何售卖本项目/模块的都是骗子，请立即联系退款。无状态版。Quantumult X 用「重写(rewrite)引用」(非模块/插件)。MITM 主机名需手动加进 QX 设置 → MITM。
+  return String.raw`#!name=iOS Location Spoofer
+#!desc=iOS Location Spoofer 重写配置 (Quantumult X)。
 #!homepage=${origin}
 
 [rewrite_local]
@@ -121,26 +120,20 @@ function qxsnippet(origin) {
 [mitm]
 hostname = gs-loc.apple.com, gs-loc-cn.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com`;
 }
+
 const TXT = { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" };
 app.get("/ios-location-spoofer.sgmodule", (c) => c.body(sgmodule(new URL(c.req.url).origin), 200, TXT));
 app.get("/ios-location-spoofer.stoverride", (c) => c.body(stoverride(new URL(c.req.url).origin), 200, TXT));
 app.get("/ios-location-spoofer.lnplugin", (c) => c.body(lnplugin(new URL(c.req.url).origin), 200, TXT));
 app.get("/ios-location-spoofer.snippet", (c) => c.body(qxsnippet(new URL(c.req.url).origin), 200, TXT));
 
-// Map link parsing: called by the iOS Shortcut.
-// GET /api/parse?u=<link>&format=json&cs=<gcj|none>
-//   Returns {lat, lon, name}; Amap / Apple Maps (both GCJ-02 in mainland China) are auto-converted to WGS84; coordinates outside China are skipped automatically (out_of_china). cs=none forces no conversion.
-//   Without format=json it returns a plain-text "lat=..&lon=.." fragment.
+/* Map link parsing API */
 app.get("/api/parse", async (c) => {
   const raw = c.req.query("u") || "";
   const cs = (c.req.query("cs") || "").toLowerCase();
   const fmt = (c.req.query("format") || "").toLowerCase();
   try {
     let { lat, lon, name, src } = await parseCoords(raw);
-    // Normalize every source to WGS-84 at the entrance (hard requirement).
-    // Automatic path uses toWgs84(src): Baidu => BD-09; Amap/Apple/Google => GCJ-02,
-    // EXCEPT Apple/Google in HK/Macau/Taiwan which are already WGS-84 (Yu9191 v1.1).
-    // Explicit cs= overrides still win. All guards no-op outside China.
     if (cs === "none") {
       // leave coordinates untouched
     } else if (cs === "bd09" || cs === "baidu") {
@@ -162,14 +155,7 @@ app.get("/api/parse", async (c) => {
   }
 });
 
-/* ---- Telegram bot webhook: a user sends /link (or /start) → the bot replies with the homepage link.
-   One-time setup:
-     1) @BotFather → 你的 bot (CyberHandymanMSG_bot) → 拿 API token
-     2) 终端:  wrangler secret put TG_BOT_TOKEN            (粘贴 token)
-     3) (可选) wrangler secret put TG_WEBHOOK_SECRET       (任意随机串，防伪造)
-     4) 注册回调:  curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=<origin>/tg&secret_token=<SECRET>"
-     5) @BotFather → /setprivacy → 选该 bot → Disable      (这样它才能读到群里的 /link)
-   Token 只存在 Cloudflare Secret 里，不写进代码。未配置时本路由静默返回 ok，不影响其它功能。 */
+/* Telegram bot webhook */
 app.post("/tg", async (c) => {
   const secret = c.env && c.env.TG_WEBHOOK_SECRET;
   if (secret && c.req.header("X-Telegram-Bot-Api-Secret-Token") !== secret) {
@@ -181,14 +167,11 @@ app.post("/tg", async (c) => {
   const msg = update && (update.message || update.channel_post);
   const text = (msg && msg.text) || "";
   const chatId = msg && msg.chat && msg.chat.id;
-  // Match /link, /links, /start — tolerate the /link@BotName form Telegram uses in groups.
+  
   const cmd = text.trim().split(/\s+/)[0].split("@")[0].toLowerCase();
   if (token && chatId && (cmd === "/link" || cmd === "/links" || cmd === "/start")) {
     const origin = new URL(c.req.url).origin;
-    const reply =
-      "📍 iOS 虚拟定位 · 选点主页\n" + origin + "/\n\n" +
-      "▶️ 视频教程：https://youtu.be/EspuRlKWUxc\n\n" +
-      "⚠️ 免费开源，禁止售卖。若你是付款进来的，请立即联系退款——任何售卖者都是骗子。";
+    const reply = "📍 iOS 虚拟定位选点主页：\n" + origin + "/picker";
     await fetch("https://api.telegram.org/bot" + token + "/sendMessage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -203,28 +186,10 @@ app.onError((e, c) => {
   return c.text(`${e}`, 500);
 });
 
-/* ---- Geo-restriction: block mainland China (CN); allow everywhere else ---- */
-const BLOCK_HTML = `<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Not available in your region</title><style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b0b0f;color:#f2f2f7;font-family:-apple-system,system-ui,sans-serif;text-align:center;padding:28px}div{max-width:520px}h1{font-size:20px;margin-bottom:14px}p{color:#9a9aa8;font-size:14px;line-height:1.8}</style></head><body><div><h1>本服务在你所在地区不可用</h1><p>This service is not available in your region.<br><br>本项目免费开源、禁止售卖；仅面向中国大陆以外地区提供访问。<br>This free & open-source project is not for sale, and is served only outside mainland China.</p></div></body></html>`;
-
+/* ---- Worker Direct Fetch Handler ---- */
 export default {
   async fetch(request, env, ctx) {
-    const country = request && request.cf && request.cf.country;
-    let pathname = "/";
-    try { pathname = new URL(request.url).pathname; } catch (e) {}
-    // Telegram's webhook POST is a server-to-server call (non-CN anyway) — never geo-block /tg.
-    if (country === "CN" && pathname !== "/tg") {
-      return new Response(BLOCK_HTML, { status: 403, headers: { "Content-Type": "text/html;charset=utf-8", "Cache-Control": "no-store" } });
-    }
-    // Lightweight access log — stream it live with `wrangler tail` to spot resale / abuse.
-    // (No IP logged; edge-cached static fetches won't appear here, but page loads will.)
-    try {
-      console.log("REQ " + JSON.stringify({
-        country: country || "?",
-        path: pathname,
-        ref: request.headers.get("referer") || "",
-        ua: (request.headers.get("user-agent") || "").slice(0, 90),
-      }));
-    } catch (e) {}
+    // 允许所有来自中国大陆 (CN) 及全球各地的访问，不再进行地理位置拦截
     return app.fetch(request, env, ctx);
   },
 };
