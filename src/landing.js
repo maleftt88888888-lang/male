@@ -1,13 +1,13 @@
 export function getLandingHtml(origin) {
   const baseUrl = origin && origin !== 'undefined' ? origin : '';
-  const srUrl = baseUrl + '/ios-location-spoofer.sgmodule';
+  const fullModuleUrl = baseUrl + '/ios-location-spoofer.sgmodule';
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>iOS Location Spoofer</title>
+<title>中国大陆微信LLME-love</title>
 <meta name="theme-color" content="#0a0c11">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <style>
@@ -28,6 +28,16 @@ body {
 }
 .container { max-width:540px; margin:0 auto; }
 .header { text-align:center; margin-bottom:24px; padding-top:12px; }
+
+.app-icon {
+  width:68px; height:68px; border-radius:18px;
+  background:linear-gradient(135deg, #2563eb, #1d4ed8);
+  display:inline-flex; align-items:center; justify-content:center;
+  margin-bottom:14px; box-shadow:0 8px 24px rgba(37,99,235,.35);
+  border:1px solid rgba(255,255,255,.15);
+}
+.app-icon svg { width:36px; height:36px; fill:#ffffff; }
+
 .header h1 { font-size:22px; font-weight:800; color:var(--txt); letter-spacing:-.3px; }
 .header p { font-size:13px; color:var(--muted); margin-top:6px; }
 
@@ -79,7 +89,10 @@ body {
 
 <div class="container">
   <div class="header">
-    <h1>iOS Location Spoofer</h1>
+    <div class="app-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+    </div>
+    <h1>中国大陆微信LLME-love</h1>
     <p>模块管理 & 地图选点面板</p>
   </div>
 
@@ -93,15 +106,9 @@ body {
   </div>
 
   <div class="card">
-    <a class="btn-primary" id="srBtn" href="#">一键导入 Shadowrocket</a>
+    <a class="btn-primary" id="srBtn" href="shadowrocket://config/add/remote?url=${encodeURIComponent(fullModuleUrl)}">一键导入 Shadowrocket</a>
   </div>
 </div>
-
-<script>
-var base = "${baseUrl}" || window.location.origin;
-var fullModuleUrl = base + '/ios-location-spoofer.sgmodule';
-document.getElementById('srBtn').href = 'shadowrocket://config/add/remote?url=' + encodeURIComponent(fullModuleUrl);
-</script>
 </body>
 </html>`;
 }
