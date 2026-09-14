@@ -155,93 +155,6 @@ app.get("/api/parse", async (c) => {
   }
 });
 
-/* Save location API (Support /api/save and /store for compatibility) */
-const handleSave = async (c) => {
-  try {
-    const body = await c.req.json();
-    if (c.env && c.env.KV) {
-      await c.env.KV.put("target_location", JSON.stringify(body));
-      await c.env.KV.put("current_location", JSON.stringify(body));
-    }
-    c.header("Access-Control-Allow-Origin", "*");
-    return c.json({ status: "ok", data: body });
-  } catch (e) {
-    c.header("Access-Control-Allow-Origin", "*");
-    return c.json({ error: String(e) }, 422);
-  }
-};
-
-const handleOptions = (c) => {
-  c.header("Access-Control-Allow-Origin", "*");
-  c.header("Access-Control-Allow-Methods", "POST, GET, DELETE, OPTIONS");
-  c.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  return c.text("", 204);
-};
-
-app.post("/api/save", handleSave);
-app.options("/api/save", handleOptions);
-app.post("/store", handleSave);
-app.options("/store", handleOptions);
-
-/* ---- Added Control Panel / Active / Delete / ils-settings extensions ---- */
-app.delete("/api/save", async (c) => {
-  try {
-    if (c.env && c.env.KV) {
-      await c.env.KV.delete("target_location");
-      await c.env.KV.delete("current_location");
-    }
-    c.header("Access-Control-Allow-Origin", "*");
-    return c.json({ status: "ok", cleared: true });
-  } catch (e) {
-    c.header("Access-Control-Allow-Origin", "*");
-    return c.json({ error: String(e) }, 422);
-  }
-});
-
-app.get("/api/active", async (c) => {
-  c.header("Access-Control-Allow-Origin", "*");
-  try {
-    if (c.env && c.env.KV) {
-      const data = (await c.env.KV.get("target_location")) || (await c.env.KV.get("current_location"));
-      if (data) {
-        return c.json({ status: "ok", data: JSON.parse(data) });
-      }
-    }
-    return c.json({ status: "empty" });
-  } catch (e) {
-    return c.json({ status: "empty" });
-  }
-});
-
-app.all("/ils-settings/*", async (c) => {
-  c.header("Access-Control-Allow-Origin", "*");
-  if (c.req.method === "POST") {
-    try {
-      const body = await c.req.json().catch(() => ({}));
-      if (c.env && c.env.KV) {
-        await c.env.KV.put("target_location", JSON.stringify(body));
-        await c.env.KV.put("current_location", JSON.stringify(body));
-      }
-      return c.json({ status: "ok", data: body });
-    } catch (e) {
-      return c.json({ error: String(e) }, 422);
-    }
-  }
-  if (c.env && c.env.KV) {
-    const data = (await c.env.KV.get("target_location")) || (await c.env.KV.get("current_location"));
-    if (data) {
-      return c.json(JSON.parse(data));
-    }
-  }
-  return c.json({
-    latitude: 39.9042,
-    longitude: 116.4074,
-    altitude: 0,
-    horizontalAccuracy: 39,
-    verticalAccuracy: 1000
-  });
-});
-
 /* Telegram bot webhook */
 app.post("/tg", async (c) => {
   const secret = c.env && c.env.TG_WEBHOOK_SECRET;
@@ -276,6 +189,7 @@ app.onError((e, c) => {
 /* ---- Worker Direct Fetch Handler ---- */
 export default {
   async fetch(request, env, ctx) {
+    // 允许所有来自中国大陆 (CN) 及全球各地的访问，不再进行地理位置拦截
     return app.fetch(request, env, ctx);
   },
 };
