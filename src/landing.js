@@ -1,5 +1,5 @@
 export function getLandingHtml(origin) {
-  const baseUrl = origin && origin !== 'undefined' ? origin : '';
+  const srUrl = origin + '/ios-location-spoofer.sgmodule';
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -42,9 +42,21 @@ body {
   background:linear-gradient(135deg,var(--cyan),var(--cyan2));
   color:#022a2d; font-size:15px; font-weight:700; text-decoration:none;
   border-radius:12px; box-shadow:0 6px 18px rgba(23,195,207,.28);
-  transition:all .15s;
+  transition:all .15s; margin-bottom:12px;
 }
 .btn-primary:active { filter:brightness(1.12); transform:scale(.98); }
+
+.copy-box { display:flex; gap:8px; align-items:center; }
+.copy-box input {
+  flex:1; padding:10px 12px; background:var(--inset); border:1px solid var(--line);
+  border-radius:10px; font-family:"SF Mono",ui-monospace,monospace; font-size:12px;
+  color:var(--mono); outline:none; min-width:0;
+}
+.btn-copy {
+  padding:10px 16px; background:var(--card2); border:1px solid var(--line);
+  color:var(--txt); font-size:13px; font-weight:600; border-radius:10px; cursor:pointer;
+}
+.btn-copy:active { background:#2a3140; }
 
 .btn-map {
   display:block; width:100%; padding:14px; text-align:center;
@@ -53,6 +65,14 @@ body {
   border-radius:12px; transition:all .15s;
 }
 .btn-map:active { background:#2a3140; transform:scale(.98); }
+
+.toast {
+  position:fixed; top:20px; left:50%; transform:translateX(-50%);
+  background:rgba(8,10,14,.92); border:1px solid var(--line); color:#fff;
+  padding:10px 20px; border-radius:20px; font-size:13px; opacity:0;
+  transition:opacity .3s; pointer-events:none; z-index:9999;
+}
+.toast.show { opacity:1; }
 </style>
 </head>
 <body>
@@ -64,27 +84,46 @@ body {
   </div>
 
   <div class="card">
-    <a class="btn-primary" id="btnSurge" href="#">一键导入 Surge</a>
+    <a class="btn-primary" href="shadowrocket://config/add/remote?url=${encodeURIComponent(srUrl)}">一键导入 Shadowrocket</a>
+    <div class="copy-box">
+      <input id="srUrl" value="${srUrl}" readonly />
+      <button class="btn-copy" onclick="copyText('srUrl', this)">复制</button>
+    </div>
   </div>
 
   <div class="card">
-    <a class="btn-primary" id="btnSr" href="#">一键导入 Shadowrocket</a>
+    <div class="copy-box">
+      <input id="srUrl2" value="${srUrl}" readonly />
+      <button class="btn-copy" onclick="copyText('srUrl2', this)">复制</button>
+    </div>
   </div>
 
   <div class="card">
-    <a class="btn-primary" id="btnEgern" href="#">一键导入 Egern</a>
+    <div class="copy-box">
+      <input id="lnUrl" value="${origin}/ios-location-spoofer.lnplugin" readonly />
+      <button class="btn-copy" onclick="copyText('lnUrl', this)">复制</button>
+    </div>
   </div>
 
   <div class="card">
-    <a class="btn-primary" id="btnLoon" href="#">一键导入 Loon</a>
+    <div class="copy-box">
+      <input id="stUrl" value="${origin}/ios-location-spoofer.stoverride" readonly />
+      <button class="btn-copy" onclick="copyText('stUrl', this)">复制</button>
+    </div>
   </div>
 
   <div class="card">
-    <a class="btn-primary" id="btnStash" href="#">一键导入 Stash</a>
+    <div class="copy-box">
+      <input id="qxUrl" value="${origin}/ios-location-spoofer.snippet" readonly />
+      <button class="btn-copy" onclick="copyText('qxUrl', this)">复制</button>
+    </div>
   </div>
 
   <div class="card">
-    <a class="btn-primary" id="btnQX" href="#">一键导入 Quantumult X</a>
+    <div class="copy-box">
+      <input id="egUrl" value="${srUrl}" readonly />
+      <button class="btn-copy" onclick="copyText('egUrl', this)">复制</button>
+    </div>
   </div>
 
   <div style="margin-top:20px;">
@@ -92,19 +131,25 @@ body {
   </div>
 </div>
 
-<script>
-var base = "${baseUrl}" || window.location.origin;
-var sgUrl = base + '/ios-location-spoofer.sgmodule';
-var lnUrl = base + '/ios-location-spoofer.lnplugin';
-var stUrl = base + '/ios-location-spoofer.stoverride';
-var qxUrl = base + '/ios-location-spoofer.snippet';
+<div class="toast" id="toast"></div>
 
-document.getElementById('btnSurge').href = 'surge:///install-config?url=' + encodeURIComponent(sgUrl);
-document.getElementById('btnSr').href = 'shadowrocket://config/add/remote?url=' + encodeURIComponent(sgUrl);
-document.getElementById('btnEgern').href = 'egern://import?url=' + encodeURIComponent(sgUrl);
-document.getElementById('btnLoon').href = 'loon://import?plugin=' + encodeURIComponent(lnUrl);
-document.getElementById('btnStash').href = 'stash://install-override?url=' + encodeURIComponent(stUrl);
-document.getElementById('btnQX').href = 'quantumult-x://exec?type=snippet&url=' + encodeURIComponent(qxUrl);
+<script>
+function copyText(id, btn) {
+  var input = document.getElementById(id);
+  input.select();
+  navigator.clipboard.writeText(input.value).then(function() {
+    var orig = btn.textContent;
+    btn.textContent = '已复制';
+    toast('已复制');
+    setTimeout(function() { btn.textContent = orig; }, 1500);
+  });
+}
+function toast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function() { el.classList.remove('show'); }, 2000);
+}
 </script>
 </body>
 </html>`;
