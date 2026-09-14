@@ -187,7 +187,7 @@ body {
       <button class="btn btn-secondary" data-i18n="add_fav" onclick="addFav()">收藏位置</button>
       <button class="btn btn-secondary" data-i18n="locate" onclick="locateMe()">当前位置</button>
     </div>
-    <div class="hint" data-i18n="alt_hint">海拔由 Open-Meteo 自动查询（WGS-84），储存到设备时随经纬度一并写入，由 iOS Location Spoofer 模块生效。</div>
+    <div class="hint" data-i18n="alt_hint">海拔由 Open-Meteo 自动查询（WGS-84），储存到设备时一并写入。</div>
     <div class="accnote" data-i18n-html="acc_note_html"></div>
   </div>
 
@@ -217,7 +217,7 @@ body {
       <input id="urlInput" data-i18n-ph="paste_ph" placeholder="Apple/Google/高德/百度地图链接 或 经纬度" />
       <button class="btn btn-secondary" style="flex:none;min-width:56px" data-i18n="parse" onclick="parseUrl()">解析</button>
     </div>
-    <div style="font-size:11px;color:var(--gray);margin-top:6px" data-i18n="paste_hint">支持 Apple Maps · Google Maps · 高德 · 百度 · 坐标文本（自动换算为 WGS-84）</div>
+    <div style="font-size:11px;color:var(--gray);margin-top:6px" data-i18n="paste_hint">支持各大地图分享链接与纯坐标文本（自动转为 WGS-84）</div>
   </div>
 
   <div class="card">
@@ -253,13 +253,10 @@ const ELEV_API = 'https://api.open-meteo.com/v1/elevation';
 const FAV_KEY = 'ils_favorites';
 const LANG_KEY = 'ils_lang';
 let lat = 0, lon = 0;
-let didInitialCenter = false;
 let selected = false;
 let elev = null, elevState = 'idle';
-let activeLon = null, activeLat = null, activeAcc = null, activeAlt = null, activeStatus = 'querying';
-let savedLon = null, savedLat = null, savedTimeStr = '';
+let activeLon = null, activeLat = null, activeAcc = null, activeAlt = null;
 
-/* GCJ-02 to WGS-84 conversion for Amap Search */
 function gcj02ToWgs84(lat, lon) {
   const a = 6378245.0, ee = 0.00669342162296594323;
   let dLat = transformLat(lon - 105.0, lat - 35.0);
@@ -304,12 +301,21 @@ const I18N = {
     acc: '精度', restore: '恢复真实定位', restored: '✓ 已发送恢复请求。请关闭定位服务并重启代理。', hacc: '水平精度', vacc: '垂直精度', jitter: '扰动半径(米)',
     querying: '查询中...', no_saved: '无已保存的坐标', query_failed: '查询失败 (需要代理模块支持)', cleared: '已清除',
     fav_empty: '暂无收藏', active_now: '✓ 当前生效', del: '删除', pick_first: '请先在地图上选择位置', enter_label: '请输入备注',
-    added: n => '已收藏: ' + n, deleted: n => '已删除: ' + n, clear_fav_confirm: '确定清空所有收藏？', all_cleared: '已清空收藏',
-    clear_confirm: '确定清除设备上已保存的坐标？', dev_cleared: '设备坐标已清除', clear_failed: e => '清除失败: ' + e,
+    added: function(n){ return '已收藏: ' + n; },
+    deleted: function(n){ return '已删除: ' + n; },
+    clear_fav_confirm: '确定清空所有收藏？', all_cleared: '已清空收藏',
+    clear_confirm: '确定清除设备上已保存的坐标？', dev_cleared: '设备坐标已清除',
+    clear_failed: function(e){ return '清除失败: ' + e; },
     saving: '储存中...', saved: '✓ 已储存', saved_toast: '✓ 坐标已成功写入模块！', write_failed: '写入失败',
-    no_geo: '浏览器不支持定位', getting_loc: '获取位置中...', got_loc: '已获取当前位置', loc_failed: m => '定位失败: ' + m,
-    paste_first: '请粘贴链接或坐标', parse_failed: '解析失败', parsing: '解析中...', parsed: (lo,la) => `已解析: ${lo.toFixed(4)}, ${la.toFixed(4)}`,
-    enter_place: '请输入地名', searching: '搜索中...', not_found: q => '未找到: ' + q, search_failed: '搜索失败', copied: x => '已复制: ' + x, copy_failed: '复制失败'
+    no_geo: '浏览器不支持定位', getting_loc: '获取位置中...', got_loc: '已获取当前位置',
+    loc_failed: function(m){ return '定位失败: ' + m; },
+    paste_first: '请粘贴链接或坐标', parse_failed: '解析失败', parsing: '解析中...',
+    parsed: function(lo, la){ return '已解析: ' + lo.toFixed(4) + ', ' + la.toFixed(4); },
+    enter_place: '请输入地名', searching: '搜索中...',
+    not_found: function(q){ return '未找到: ' + q; },
+    search_failed: '搜索失败',
+    copied: function(x){ return '已复制: ' + x; },
+    copy_failed: '复制失败'
   },
   en: {
     title: 'iOS Location Spoofer',
@@ -327,12 +333,21 @@ const I18N = {
     acc: 'Accuracy', restore: 'Restore Real Location', restored: '✓ Location cleared.', hacc: 'H. Acc', vacc: 'V. Acc', jitter: 'Jitter Radius',
     querying: 'Querying...', no_saved: 'No saved coordinates', query_failed: 'Query failed', cleared: 'Cleared',
     fav_empty: 'No favorites', active_now: '✓ Active', del: 'Delete', pick_first: 'Select a position on map first', enter_label: 'Enter a label',
-    added: n => 'Added: ' + n, deleted: n => 'Deleted: ' + n, clear_fav_confirm: 'Clear all favorites?', all_cleared: 'Cleared all',
-    clear_confirm: 'Clear saved coordinates?', dev_cleared: 'Coordinates cleared', clear_failed: e => 'Failed: ' + e,
+    added: function(n){ return 'Added: ' + n; },
+    deleted: function(n){ return 'Deleted: ' + n; },
+    clear_fav_confirm: 'Clear all favorites?', all_cleared: 'Cleared all',
+    clear_confirm: 'Clear saved coordinates?', dev_cleared: 'Coordinates cleared',
+    clear_failed: function(e){ return 'Failed: ' + e; },
     saving: 'Saving...', saved: '✓ Saved', saved_toast: '✓ Coordinates updated!', write_failed: 'Failed to write',
-    no_geo: 'Geolocation not supported', getting_loc: 'Locating...', got_loc: 'Location retrieved', loc_failed: m => 'Failed: ' + m,
-    paste_first: 'Paste a link first', parse_failed: 'Parse failed', parsing: 'Parsing...', parsed: (lo,la) => `Parsed: ${lo.toFixed(4)}, ${la.toFixed(4)}`,
-    enter_place: 'Enter a location name', searching: 'Searching...', not_found: q => 'Not found: ' + q, search_failed: 'Search failed', copied: x => 'Copied: ' + x, copy_failed: 'Copy failed'
+    no_geo: 'Geolocation not supported', getting_loc: 'Locating...', got_loc: 'Location retrieved',
+    loc_failed: function(m){ return 'Failed: ' + m; },
+    paste_first: 'Paste a link first', parse_failed: 'Parse failed', parsing: 'Parsing...',
+    parsed: function(lo, la){ return 'Parsed: ' + lo.toFixed(4) + ', ' + la.toFixed(4); },
+    enter_place: 'Enter a location name', searching: 'Searching...',
+    not_found: function(q){ return 'Not found: ' + q; },
+    search_failed: 'Search failed',
+    copied: function(x){ return 'Copied: ' + x; },
+    copy_failed: 'Copy failed'
   }
 };
 
@@ -354,10 +369,10 @@ function t(key) {
 function applyI18n() {
   document.documentElement.lang = (lang === 'zh' ? 'zh-CN' : 'en');
   document.title = t('title');
-  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
-  document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))); });
-  document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.getAttribute('data-i18n-html')); });
-  document.querySelectorAll('.lang-btn').forEach(b => { b.classList.toggle('active', b.getAttribute('data-lang') === lang); });
+  document.querySelectorAll('[data-i18n]').forEach(function(el) { el.textContent = t(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(function(el) { el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))); });
+  document.querySelectorAll('[data-i18n-html]').forEach(function(el) { el.innerHTML = t(el.getAttribute('data-i18n-html')); });
+  document.querySelectorAll('.lang-btn').forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-lang') === lang); });
   updateCoords();
   updateStatus();
   renderActive();
@@ -385,14 +400,15 @@ function switchLayer(name) {
   if (tiles[currentLayer]) map.removeLayer(tiles[currentLayer]);
   tiles[name].addTo(map);
   currentLayer = name;
-  document.querySelectorAll('.layer-btn').forEach(b => {
+  document.querySelectorAll('.layer-btn').forEach(function(b) {
     b.classList.toggle('active', b.getAttribute('data-layer') === name);
   });
 }
 
 let marker = null;
 
-function setTarget(la, lo, fly = true) {
+function setTarget(la, lo, fly) {
+  if (fly === undefined) fly = true;
   lat = la; lon = lo; selected = true;
   if (!marker) {
     marker = L.marker([lat, lon]).addTo(map);
@@ -404,7 +420,7 @@ function setTarget(la, lo, fly = true) {
   fetchElevation(lat, lon);
 }
 
-map.on('click', e => {
+map.on('click', function(e) {
   setTarget(e.latlng.lat, e.latlng.lng, false);
 });
 
@@ -412,15 +428,15 @@ function fetchElevation(la, lo) {
   elevState = 'loading';
   updateCoords();
   fetch(`${ELEV_API}?latitude=${la.toFixed(6)}&longitude=${lo.toFixed(6)}`)
-    .then(r => r.json())
-    .then(data => {
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
       if (data && data.elevation !== undefined && data.elevation !== null) {
         elev = Math.round(data.elevation[0] || data.elevation);
         elevState = 'ok';
       } else { elevState = 'fail'; }
       updateCoords();
     })
-    .catch(() => { elevState = 'fail'; updateCoords(); });
+    .catch(function() { elevState = 'fail'; updateCoords(); });
 }
 
 function updateCoords() {
@@ -454,7 +470,7 @@ function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 3000);
+  setTimeout(function() { el.classList.remove('show'); }, 3000);
 }
 
 function save() {
@@ -482,8 +498,8 @@ function save() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   })
-  .then(r => r.json())
-  .then(data => {
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
     btn.disabled = false;
     btn.textContent = t('save');
     if (data.status === 'ok' || data.success) {
@@ -493,7 +509,7 @@ function save() {
       toast(t('write_failed'));
     }
   })
-  .catch(() => {
+  .catch(function() {
     btn.disabled = false;
     btn.textContent = t('save');
     toast(t('write_failed'));
@@ -503,22 +519,22 @@ function save() {
 function restoreReal() {
   if (!confirm(t('clear_confirm'))) return;
   fetch(SAVE_API, { method: 'DELETE' })
-    .then(() => {
+    .then(function() {
       toast(t('restored'));
       queryActive();
     })
-    .catch(() => toast(t('clear_failed_cfg')));
+    .catch(function() { toast(t('clear_failed_cfg')); });
 }
 
 function locateMe() {
   if (!navigator.geolocation) return toast(t('no_geo'));
   toast(t('getting_loc'));
   navigator.geolocation.getCurrentPosition(
-    pos => {
+    function(pos) {
       setTarget(pos.coords.latitude, pos.coords.longitude);
       toast(t('got_loc'));
     },
-    err => toast(t('loc_failed', err.message)),
+    function(err) { toast(t('loc_failed', err.message)); },
     { enableHighAccuracy: true, timeout: 10000 }
   );
 }
@@ -528,10 +544,10 @@ function copyField(type, btn) {
   if (type === 'lat') val = lat.toFixed(6);
   if (type === 'lon') val = lon.toFixed(6);
   if (type === 'alt') val = document.getElementById('altInput').value || '0';
-  navigator.clipboard.writeText(val).then(() => {
+  navigator.clipboard.writeText(val).then(function() {
     const orig = btn.textContent;
     btn.textContent = '✓';
-    setTimeout(() => btn.textContent = orig, 1500);
+    setTimeout(function() { btn.textContent = orig; }, 1500);
   });
 }
 
@@ -542,15 +558,14 @@ function copyParams(btn) {
   const vacc = document.getElementById('vaccInput').value || '1000';
   const jitter = document.getElementById('jitterInput').value || '0';
   const str = `lat=${lat.toFixed(6)}&lon=${lon.toFixed(6)}&alt=${altVal}&hacc=${hacc}&vacc=${vacc}&jitter=${jitter}`;
-  navigator.clipboard.writeText(str).then(() => toast(t('copied', '参数字符串')));
+  navigator.clipboard.writeText(str).then(function() { toast(t('copied', '参数字符串')); });
 }
 
-/* Active Loc query */
 function queryActive() {
   document.getElementById('activeValue').textContent = t('querying');
   fetch('https://gs-loc.apple.com/ils-settings/active')
-    .then(r => r.json())
-    .then(data => {
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
       document.getElementById('errorBanner').style.display = 'none';
       if (data && data.latitude !== undefined) {
         activeLat = data.latitude;
@@ -561,7 +576,7 @@ function queryActive() {
         document.getElementById('activeValue').textContent = t('no_saved');
       }
     })
-    .catch(() => {
+    .catch(function() {
       document.getElementById('errorBanner').style.display = 'block';
       document.getElementById('activeValue').textContent = t('query_failed');
     });
@@ -575,7 +590,6 @@ function renderActive() {
   queryActive();
 }
 
-/* Favorites logic */
 function getFavs() {
   try { return JSON.parse(localStorage.getItem(FAV_KEY)) || []; } catch(e) { return []; }
 }
@@ -595,7 +609,7 @@ function confirmFav() {
   const name = document.getElementById('favNameInput').value.trim();
   if (!name) return toast(t('enter_label'));
   const list = getFavs();
-  list.push({ name, lat, lon, alt: document.getElementById('altInput').value || 0 });
+  list.push({ name: name, lat: lat, lon: lon, alt: document.getElementById('altInput').value || 0 });
   saveFavs(list);
   closeFavModal();
   renderFavs();
@@ -624,25 +638,26 @@ function renderFavs() {
     el.innerHTML = `<div class="fav-empty">${t('fav_empty')}</div>`;
     return;
   }
-  el.innerHTML = list.map((item, i) => `
-    <div class="fav-item" onclick="setTarget(${item.lat}, ${item.lon})">
-      <div class="fav-info">
-        <div class="fav-name">${item.name}</div>
-        <div class="fav-coords">${item.lat.toFixed(6)}, ${item.lon.toFixed(6)}</div>
+  el.innerHTML = list.map(function(item, i) {
+    return `
+      <div class="fav-item" onclick="setTarget(${item.lat}, ${item.lon})">
+        <div class="fav-info">
+          <div class="fav-name">${item.name}</div>
+          <div class="fav-coords">${item.lat.toFixed(6)}, ${item.lon.toFixed(6)}</div>
+        </div>
+        <button class="fav-del" onclick="deleteFav(${i}, event)">×</button>
       </div>
-      <button class="fav-del" onclick="deleteFav(${i}, event)">×</button>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
-/* Parse Map Link */
 function parseUrl() {
   const input = document.getElementById('urlInput').value.trim();
   if (!input) return toast(t('paste_first'));
   toast(t('parsing'));
   fetch(`${PARSE_API}?u=${encodeURIComponent(input)}&format=json`)
-    .then(r => r.json())
-    .then(data => {
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
       if (data && data.lat && data.lon) {
         setTarget(data.lat, data.lon);
         toast(t('parsed', data.lon, data.lat));
@@ -650,10 +665,9 @@ function parseUrl() {
         toast(t('parse_failed'));
       }
     })
-    .catch(() => toast(t('parse_failed')));
+    .catch(function() { toast(t('parse_failed')); });
 }
 
-/* 优化后智能地名搜索逻辑：中文优先高德API，英文切OSM */
 function searchPlace() {
   const q = document.getElementById('searchInput').value.trim();
   if (!q) return toast(t('enter_place'));
@@ -662,12 +676,11 @@ function searchPlace() {
 
   const isChinese = /[\u4e00-\u9fa5]/.test(q);
   if (isChinese) {
-    // 优先高德 Web 搜索 API
     fetch(`https://restapi.amap.com/v3/place/text?keywords=${encodeURIComponent(q)}&key=832511019905952f7596a29d5b0c9509&offset=10`)
-      .then(r => r.json())
-      .then(data => {
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
         if (data.status === '1' && data.pois && data.pois.length > 0) {
-          resEl.innerHTML = data.pois.map(poi => {
+          resEl.innerHTML = data.pois.map(function(poi) {
             const parts = poi.location.split(',');
             const gcjLon = parseFloat(parts[0]), gcjLat = parseFloat(parts[1]);
             const wgs = gcj02ToWgs84(gcjLat, gcjLon);
@@ -682,7 +695,7 @@ function searchPlace() {
           fallbackOsmSearch(q, resEl);
         }
       })
-      .catch(() => fallbackOsmSearch(q, resEl));
+      .catch(function() { fallbackOsmSearch(q, resEl); });
   } else {
     fallbackOsmSearch(q, resEl);
   }
@@ -690,25 +703,26 @@ function searchPlace() {
 
 function fallbackOsmSearch(q, resEl) {
   fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=10`)
-    .then(r => r.json())
-    .then(data => {
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
       if (data && data.length > 0) {
-        resEl.innerHTML = data.map(item => `
-          <div class="search-item" onclick="setTarget(${parseFloat(item.lat)}, ${parseFloat(item.lon)})">
-            <div class="si-name">${item.display_name.split(',')[0]}</div>
-            <div class="si-sub">${item.display_name}</div>
-          </div>
-        `).join('');
+        resEl.innerHTML = data.map(function(item) {
+          return `
+            <div class="search-item" onclick="setTarget(${parseFloat(item.lat)}, ${parseFloat(item.lon)})">
+              <div class="si-name">${item.display_name.split(',')[0]}</div>
+              <div class="si-sub">${item.display_name}</div>
+            </div>
+          `;
+        }).join('');
       } else {
         resEl.innerHTML = `<div style="text-align:center;color:var(--muted);padding:10px">${t('not_found', q)}</div>`;
       }
     })
-    .catch(() => {
+    .catch(function() {
       resEl.innerHTML = `<div style="text-align:center;color:var(--red);padding:10px">${t('search_failed')}</div>`;
     });
 }
 
-// 初始化
 applyI18n();
 </script>
 </body>
