@@ -35,11 +35,9 @@ body {
 ::-webkit-scrollbar { width:6px; height:6px; }
 ::-webkit-scrollbar-thumb { background:#2b3342; border-radius:3px; }
 
-/* ---- top bar ---- */
-.topbar { position:sticky; top:0; z-index:1200; display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:rgba(10,12,17,.82); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); font-size:13px; color:var(--txt); font-weight:700; }
+.topbar { position:sticky; top:0; z-index:1200; display:flex; align-items:center; justify-space-between; padding:10px 16px; background:rgba(10,12,17,.82); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); font-size:13px; color:var(--txt); font-weight:700; }
 .topbar .back { color:var(--cyan); font-weight:700; text-decoration:none; }
 
-/* ---- map + controls ---- */
 #map { height:50vh; width:100%; min-height:260px; background:#0a0c11; border-bottom:1px solid var(--line); }
 .leaflet-container { background:#0a0c11; }
 .leaflet-control-zoom a { background:rgba(18,22,29,.9)!important; color:var(--txt)!important; border-color:var(--line)!important; -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
@@ -50,7 +48,6 @@ body {
 
 .panel { padding:16px; max-width:600px; margin:0 auto; padding-bottom:calc(16px + env(safe-area-inset-bottom)); }
 
-/* ---- glass cards ---- */
 .card { background:linear-gradient(180deg,rgba(25,30,40,.72),rgba(18,22,29,.72)); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 8px 28px rgba(0,0,0,.34); }
 .card h3 { font-size:15px; font-weight:700; margin-bottom:12px; color:var(--txt); display:flex; align-items:center; gap:8px; }
 .card h3::before { content:""; width:3px; height:14px; border-radius:2px; background:linear-gradient(180deg,var(--cyan),var(--green)); flex:none; }
@@ -72,7 +69,6 @@ body {
 .btn.success { background:linear-gradient(135deg,#2ee06a,#129a44); color:#04240f; border:none; box-shadow:0 6px 18px rgba(34,197,94,.3); }
 .btn-sm { flex:none; min-width:auto; padding:6px 12px; font-size:12px; border-radius:8px; }
 
-/* ---- inputs ---- */
 .input-row { display:flex; gap:8px; margin-top:10px; }
 .input-row input { flex:1; padding:10px 12px; background:var(--inset); border:1px solid var(--line); border-radius:10px; font-size:14px; color:var(--txt); outline:none; min-width:0; -webkit-appearance:none; transition:border-color .15s,box-shadow .15s; }
 .cvi { flex:1; min-width:0; width:100%; font-family:"SF Mono",ui-monospace,monospace; font-size:14px; color:var(--mono); padding:6px 10px; background:var(--inset); border:1px solid var(--line); border-radius:8px; outline:none; -webkit-appearance:none; transition:border-color .15s,box-shadow .15s; }
@@ -90,7 +86,6 @@ body {
 .accnote em { color:var(--txt); font-style:normal; font-weight:800; }
 .accnote .src { display:block; margin-top:7px; color:#5d6675; font-size:10.5px; }
 
-/* ---- lists ---- */
 .search-results { margin-top:8px; max-height:260px; overflow-y:auto; }
 .search-item { padding:10px 12px; background:var(--inset); border:1px solid var(--line); border-radius:10px; margin-bottom:6px; cursor:pointer; transition:all .15s; }
 .search-item:active { background:#232a37; border-color:var(--cyan); }
@@ -120,7 +115,6 @@ body {
 .fav-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
 .fav-header h3 { margin-bottom:0; }
 
-/* ---- modal ---- */
 .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(4,6,10,.66); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); z-index:10000; display:none; align-items:center; justify-content:center; padding:20px; }
 .modal-overlay.show { display:flex; }
 .modal { background:linear-gradient(180deg,#1a1f29,#12161d); border:1px solid var(--line); border-radius:18px; padding:20px; width:100%; max-width:340px; box-shadow:0 20px 60px rgba(0,0,0,.6); }
@@ -129,7 +123,6 @@ body {
 .modal .modal-btns { display:flex; gap:8px; }
 .modal .modal-btns .btn { padding:12px; }
 
-/* ---- map overlay switches ---- */
 .layer-switch { position:absolute; top:10px; right:10px; z-index:1000; display:flex; gap:4px; background:rgba(10,12,17,.74); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:10px; padding:4px; box-shadow:0 4px 18px rgba(0,0,0,.45); }
 .layer-btn { border:none; background:transparent; padding:6px 10px; border-radius:7px; font-size:12px; font-weight:600; color:#a8b1c0; cursor:pointer; transition:all .15s; white-space:nowrap; }
 .layer-btn.active { background:linear-gradient(135deg,var(--cyan),var(--cyan2)); color:#022a2d; font-weight:700; }
@@ -258,7 +251,6 @@ let selected = false;
 let elev = null, elevState = 'idle';
 let activeLon = null, activeLat = null, activeAcc = null, activeAlt = null, activeStatus = 'querying';
 
-/* GCJ-02 to WGS-84 */
 function gcj02ToWgs84(lat, lon) {
   const a = 6378245.0, ee = 0.00669342162296594323;
   let dLat = transformLat(lon - 105.0, lat - 35.0);
@@ -303,12 +295,21 @@ const I18N = {
     acc: '精度', restore: '恢复真实定位', restored: '✓ 已发送恢复请求。请关闭定位服务并重启代理。', hacc: '水平精度', vacc: '垂直精度', jitter: '扰动半径(米)',
     querying: '查询中...', no_saved: '无已保存的坐标', query_failed: '查询失败 (需要代理模块支持)', cleared: '已清除',
     fav_empty: '暂无收藏', active_now: '✓ 当前生效', del: '删除', pick_first: '请先在地图上选择位置', enter_label: '请输入备注',
-    added: n => '已收藏: ' + n, deleted: n => '已删除: ' + n, clear_fav_confirm: '确定清空所有收藏？', all_cleared: '已清空收藏',
-    clear_confirm: '确定清除设备上已保存的坐标？', dev_cleared: '设备坐标已清除', clear_failed: e => '清除失败: ' + e,
+    added: function(n){ return '已收藏: ' + n; },
+    deleted: function(n){ return '已删除: ' + n; },
+    clear_fav_confirm: '确定清空所有收藏？', all_cleared: '已清空收藏',
+    clear_confirm: '确定清除设备上已保存的坐标？', dev_cleared: '设备坐标已清除',
+    clear_failed: function(e){ return '清除失败: ' + e; },
     saving: '储存中...', saved: '✓ 已储存', saved_toast: '✓ 坐标已成功写入模块！', write_failed: '写入失败，请检查模块与 MITM 设置',
-    no_geo: '浏览器不支持定位', getting_loc: '获取位置中...', got_loc: '已获取当前位置', loc_failed: m => '定位失败: ' + m,
-    paste_first: '请粘贴链接或坐标', parse_failed: '解析失败', parsing: '解析中...', parsed: (lo,la) => `已解析: ${lo.toFixed(4)}, ${la.toFixed(4)}`,
-    enter_place: '请输入地名', searching: '搜索中...', not_found: q => '未找到: ' + q, search_failed: '搜索失败', copied: x => '已复制: ' + x, copy_failed: '复制失败'
+    no_geo: '浏览器不支持定位', getting_loc: '获取位置中...', got_loc: '已获取当前位置',
+    loc_failed: function(m){ return '定位失败: ' + m; },
+    paste_first: '请粘贴链接或坐标', parse_failed: '解析失败', parsing: '解析中...',
+    parsed: function(lo,la){ return '已解析: ' + lo.toFixed(4) + ', ' + la.toFixed(4); },
+    enter_place: '请输入地名', searching: '搜索中...',
+    not_found: function(q){ return '未找到: ' + q; },
+    search_failed: '搜索失败',
+    copied: function(x){ return '已复制: ' + x; },
+    copy_failed: '复制失败'
   },
   en: {
     title: 'iOS Location Spoofer',
@@ -326,12 +327,21 @@ const I18N = {
     acc: 'Accuracy', restore: 'Restore Real Location', restored: '✓ Location cleared.', hacc: 'H. Acc', vacc: 'V. Acc', jitter: 'Jitter Radius',
     querying: 'Querying...', no_saved: 'No saved coordinates', query_failed: 'Query failed', cleared: 'Cleared',
     fav_empty: 'No favorites', active_now: '✓ Active', del: 'Delete', pick_first: 'Select a position on map first', enter_label: 'Enter a label',
-    added: n => 'Added: ' + n, deleted: n => 'Deleted: ' + n, clear_fav_confirm: 'Clear all favorites?', all_cleared: 'Cleared all',
-    clear_confirm: 'Clear saved coordinates?', dev_cleared: 'Coordinates cleared', clear_failed: e => 'Failed: ' + e,
+    added: function(n){ return 'Added: ' + n; },
+    deleted: function(n){ return 'Deleted: ' + n; },
+    clear_fav_confirm: 'Clear all favorites?', all_cleared: 'Cleared all',
+    clear_confirm: 'Clear saved coordinates?', dev_cleared: 'Coordinates cleared',
+    clear_failed: function(e){ return 'Failed: ' + e; },
     saving: 'Saving...', saved: '✓ Saved', saved_toast: '✓ Coordinates updated!', write_failed: 'Write failed, check MITM & module',
-    no_geo: 'Geolocation not supported', getting_loc: 'Locating...', got_loc: 'Location retrieved', loc_failed: m => 'Failed: ' + m,
-    paste_first: 'Paste a link first', parse_failed: 'Parse failed', parsing: 'Parsing...', parsed: (lo,la) => `Parsed: ${lo.toFixed(4)}, ${la.toFixed(4)}`,
-    enter_place: 'Enter a location name', searching: 'Searching...', not_found: q => 'Not found: ' + q, search_failed: 'Search failed', copied: x => 'Copied: ' + x, copy_failed: 'Copy failed'
+    no_geo: 'Geolocation not supported', getting_loc: 'Locating...', got_loc: 'Location retrieved',
+    loc_failed: function(m){ return 'Failed: ' + m; },
+    paste_first: 'Paste a link first', parse_failed: 'Parse failed', parsing: 'Parsing...',
+    parsed: function(lo,la){ return 'Parsed: ' + lo.toFixed(4) + ', ' + la.toFixed(4); },
+    enter_place: 'Enter a location name', searching: 'Searching...',
+    not_found: function(q){ return 'Not found: ' + q; },
+    search_failed: 'Search failed',
+    copied: function(x){ return 'Copied: ' + x; },
+    copy_failed: 'Copy failed'
   }
 };
 
@@ -456,7 +466,6 @@ function toast(msg) {
   setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-/* 修正保存函数，提升请求容错率 */
 function save() {
   if (!selected) return toast(t('pick_first'));
   const btn = document.getElementById('saveBtn');
@@ -545,7 +554,6 @@ function copyParams(btn) {
   navigator.clipboard.writeText(str).then(() => toast(t('copied', '参数字符串')));
 }
 
-/* Active Loc query */
 function queryActive() {
   document.getElementById('activeValue').textContent = t('querying');
   fetch('https://gs-loc.apple.com/ils-settings/active')
@@ -575,7 +583,6 @@ function renderActive() {
   queryActive();
 }
 
-/* Favorites logic */
 function getFavs() {
   try { return JSON.parse(localStorage.getItem(FAV_KEY)) || []; } catch(e) { return []; }
 }
@@ -635,7 +642,6 @@ function renderFavs() {
   `).join('');
 }
 
-/* Parse Map Link */
 function parseUrl() {
   const input = document.getElementById('urlInput').value.trim();
   if (!input) return toast(t('paste_first'));
@@ -653,7 +659,6 @@ function parseUrl() {
     .catch(() => toast(t('parse_failed')));
 }
 
-/* 智能搜索逻辑 */
 function searchPlace() {
   const q = document.getElementById('searchInput').value.trim();
   if (!q) return toast(t('enter_place'));
@@ -707,7 +712,6 @@ function fallbackOsmSearch(q, resEl) {
     });
 }
 
-// 初始化
 applyI18n();
 </script>
 </body>
