@@ -35,11 +35,9 @@ body {
 ::-webkit-scrollbar { width:6px; height:6px; }
 ::-webkit-scrollbar-thumb { background:#2b3342; border-radius:3px; }
 
-/* ---- top bar ---- */
 .topbar { position:sticky; top:0; z-index:1200; display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:rgba(10,12,17,.82); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); font-size:13px; color:var(--txt); font-weight:700; }
 .topbar .back { color:var(--cyan); font-weight:700; text-decoration:none; }
 
-/* ---- map + controls ---- */
 #map { height:50vh; width:100%; min-height:260px; background:#0a0c11; border-bottom:1px solid var(--line); }
 .leaflet-container { background:#0a0c11; }
 .leaflet-control-zoom a { background:rgba(18,22,29,.9)!important; color:var(--txt)!important; border-color:var(--line)!important; -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
@@ -50,7 +48,6 @@ body {
 
 .panel { padding:16px; max-width:600px; margin:0 auto; padding-bottom:calc(16px + env(safe-area-inset-bottom)); }
 
-/* ---- glass cards ---- */
 .card { background:linear-gradient(180deg,rgba(25,30,40,.72),rgba(18,22,29,.72)); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 8px 28px rgba(0,0,0,.34); }
 .card h3 { font-size:15px; font-weight:700; margin-bottom:12px; color:var(--txt); display:flex; align-items:center; gap:8px; }
 .card h3::before { content:""; width:3px; height:14px; border-radius:2px; background:linear-gradient(180deg,var(--cyan),var(--green)); flex:none; }
@@ -72,7 +69,6 @@ body {
 .btn.success { background:linear-gradient(135deg,#2ee06a,#129a44); color:#04240f; border:none; box-shadow:0 6px 18px rgba(34,197,94,.3); }
 .btn-sm { flex:none; min-width:auto; padding:6px 12px; font-size:12px; border-radius:8px; }
 
-/* ---- inputs ---- */
 .input-row { display:flex; gap:8px; margin-top:10px; }
 .input-row input { flex:1; padding:10px 12px; background:var(--inset); border:1px solid var(--line); border-radius:10px; font-size:14px; color:var(--txt); outline:none; min-width:0; -webkit-appearance:none; transition:border-color .15s,box-shadow .15s; }
 .cvi { flex:1; min-width:0; width:100%; font-family:"SF Mono",ui-monospace,monospace; font-size:14px; color:var(--mono); padding:6px 10px; background:var(--inset); border:1px solid var(--line); border-radius:8px; outline:none; -webkit-appearance:none; transition:border-color .15s,box-shadow .15s; }
@@ -90,7 +86,6 @@ body {
 .accnote em { color:var(--txt); font-style:normal; font-weight:800; }
 .accnote .src { display:block; margin-top:7px; color:#5d6675; font-size:10.5px; }
 
-/* ---- lists ---- */
 .search-results { margin-top:8px; max-height:260px; overflow-y:auto; }
 .search-item { padding:10px 12px; background:var(--inset); border:1px solid var(--line); border-radius:10px; margin-bottom:6px; cursor:pointer; transition:all .15s; }
 .search-item:active { background:#232a37; border-color:var(--cyan); }
@@ -120,7 +115,6 @@ body {
 .fav-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
 .fav-header h3 { margin-bottom:0; }
 
-/* ---- modal ---- */
 .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(4,6,10,.66); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); z-index:10000; display:none; align-items:center; justify-content:center; padding:20px; }
 .modal-overlay.show { display:flex; }
 .modal { background:linear-gradient(180deg,#1a1f29,#12161d); border:1px solid var(--line); border-radius:18px; padding:20px; width:100%; max-width:340px; box-shadow:0 20px 60px rgba(0,0,0,.6); }
@@ -129,7 +123,6 @@ body {
 .modal .modal-btns { display:flex; gap:8px; }
 .modal .modal-btns .btn { padding:12px; }
 
-/* ---- map overlay switches ---- */
 .layer-switch { position:absolute; top:10px; right:10px; z-index:1000; display:flex; gap:4px; background:rgba(10,12,17,.74); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:10px; padding:4px; box-shadow:0 4px 18px rgba(0,0,0,.45); }
 .layer-btn { border:none; background:transparent; padding:6px 10px; border-radius:7px; font-size:12px; font-weight:600; color:#a8b1c0; cursor:pointer; transition:all .15s; white-space:nowrap; }
 .layer-btn.active { background:linear-gradient(135deg,var(--cyan),var(--cyan2)); color:#022a2d; font-weight:700; }
