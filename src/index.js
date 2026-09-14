@@ -101,7 +101,7 @@ function lnplugin(origin) {
 #!homepage=${origin}
 
 [Script]
-http-response ^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$ script-path=${origin}/location-spoofer.js, requires-body=true, binary-body-mode=true, max-size=1048576, timeout=12, tag=iOS Location Spoofer, argument=mode=response&debug=false
+http-response ^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$ script-path=${origin}/location-spoofer.js, requires-body=true, binary-body-mode=true, max-size=1048576, timeout=12, tag=iOS Location Spoofer, argument=mode=response&enabled=true&debug=false
 http-request ^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|maleftt\.medpic\.eu\.cc)\/ils-settings\/ script-path=${origin}/location-settings.js, requires-body=false, timeout=10, tag=iLS Settings
 
 [MITM]
@@ -115,7 +115,7 @@ function qxsnippet(origin) {
 
 [rewrite_local]
 ^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$ url script-response-body ${origin}/location-spoofer-qx.js
-^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|maleftt\.medpic.eu\.cc)\/ils-settings\/ url script-echo-response ${origin}/location-settings.js
+^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|maleftt\.medpic\.eu\.cc)\/ils-settings\/ url script-echo-response ${origin}/location-settings.js
 
 [mitm]
 hostname = gs-loc.apple.com, gs-loc-cn.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com, maleftt.medpic.eu.cc`;
