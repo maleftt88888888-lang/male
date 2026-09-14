@@ -84,74 +84,76 @@ body {
 }
 .btn-green-map:active { filter:brightness(1.12); transform:scale(.98); }
 
-/* 复刻原图深色化微信名片区 */
-.wx-card-wrapper {
-  background: linear-gradient(180deg, rgba(25,30,40,.72), rgba(18,22,29,.72));
-  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+/* 完全重构为深色暗黑卡片风格的微信联系名片 */
+.wx-card-dark {
+  background: linear-gradient(180deg, rgba(25,30,40,.82), rgba(18,22,29,.85));
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
   border: 1px solid var(--line);
+  box-shadow: 0 12px 36px rgba(0,0,0,.45);
   border-radius: 20px;
   padding: 24px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 8px 28px rgba(0,0,0,.34);
+  position: relative;
+  overflow: hidden;
 }
-.wx-user-row {
+.wx-card-dark::before {
+  content: '';
+  position: absolute; top:0; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent, rgba(34,197,94,.4), transparent);
+}
+.wx-profile-header {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
-  margin-bottom: 22px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
 }
-.wx-avatar-box {
+.wx-avatar-pic {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  overflow: hidden;
-  flex-shrink: 0;
-  border: 1px solid rgba(255,255,255,.12);
-}
-.wx-avatar-box img {
-  width: 100%;
-  height: 100%;
   object-fit: cover;
+  border: 1px solid rgba(255,255,255,.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,.3);
 }
-.wx-user-text h3 {
+.wx-profile-meta h3 {
   font-size: 16px;
   font-weight: 700;
   color: var(--txt);
   line-height: 1.3;
 }
-.wx-user-text p {
-  font-size: 13px;
+.wx-profile-meta p {
+  font-size: 12px;
   color: var(--muted);
-  line-height: 1.3;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
-/* 白底原色二维码容器，保证扫码成功率 */
-.wx-code-container {
+/* 保证扫码成功的纯白正方形背景外框（带科技微光边框约束） */
+.wx-qr-box {
   background: #ffffff;
-  padding: 16px;
+  padding: 14px;
   border-radius: 16px;
-  width: 100%;
-  max-width: 250px;
-  aspect-ratio: 1 / 1;
+  width: 220px;
+  height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 24px rgba(0,0,0,.35);
-  margin-bottom: 18px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.08);
+  margin-bottom: 16px;
 }
-.wx-code-container img {
+.wx-qr-box img {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
-.wx-bottom-txt {
+.wx-tips {
   font-size: 13px;
   color: var(--muted);
-  letter-spacing: 0.2px;
+  letter-spacing: 0.3px;
 }
 </style>
 </head>
@@ -179,26 +181,24 @@ body {
     <a class="btn-primary" id="srBtn" href="shadowrocket://config/add/remote?url=${encodeURIComponent(fullModuleUrl)}">一键导入 Shadowrocket</a>
   </div>
 
-  <!-- 还原并适配深色环境的微信名片组件 -->
-  <div class="section-title" style="margin-top:24px;">微信联系</div>
-  <div class="wx-card-wrapper">
-    <div class="wx-user-row">
-      <!-- 建议将原图头像切出来转成 base64 填入 src -->
-      <div class="wx-avatar-box">
-        <img src="/wechat-avatar.jpg" alt="头像" onerror="this.style.background='#2563eb'">
-      </div>
-      <div class="wx-user-text">
+  <!-- 放置在首页靠后高频触达的联系位置 -->
+  <div class="section-title" style="margin-top:28px;">交流与支持</div>
+  <div class="wx-card-dark">
+    <div class="wx-profile-header">
+      <!-- 建议替换为你实际导出的头像图片路径或 Base64 -->
+      <img class="wx-avatar-pic" src="/wechat-avatar.jpg" alt="可乐加糖头像" onerror="this.style.background='linear-gradient(135deg,#2563eb,#1d4ed8)'">
+      <div class="wx-profile-meta">
         <h3>可乐加糖</h3>
         <p>浙江 杭州</p>
       </div>
     </div>
     
-    <div class="wx-code-container">
-      <!-- 保持白底及原图绿码结构，请将 src 替换为实际二维码图片或对应 base64 -->
-      <img src="/wechat-qr.jpg" alt="微信二维码" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\\'color:%23666;font-size:12px;text-align:center\\'>请放真实二维码图片 src</span>'">
+    <div class="wx-qr-box">
+      <!-- 保持原绿码二维码结构与中心绿色微信图标，内联白框防色反差导致扫不出 -->
+      <img src="/wechat-qrcode.png" alt="微信加好友二维码" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\\'color:#333;font-size:12px;text-align:center\\'>请放真实二维码 src</span>'">
     </div>
     
-    <div class="wx-bottom-txt">扫二维码，添加我为朋友。</div>
+    <div class="wx-tips">扫二维码，添加我为朋友。</div>
   </div>
 </div>
 </body>
