@@ -54,10 +54,13 @@ function sgmodule(origin) {
 #!desc=iOS Location Spoofer 模块，支持 Shadowrocket / Surge / Egern。
 #!homepage=${origin}
 
-[Script]
-iOS Location Spoofer = type=http-response,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$,requires-body=1,binary-body-mode=1,max-size=1048576,timeout=10,script-path=${origin}/location-spoofer.js,argument=mode=response&debug=false
-iLS Settings = type=http-request,pattern=^https?:\/\/gs-loc(?:-cn)?\.apple\.com\/ils-settings\/,requires-body=0,max-size=0,timeout=10,script-path=${origin}/location-settings.js
+#!name=iOS Location Spoofer (Shadowrocket Fix)
+#!desc=iOS 虚拟定位模块 (已针对小火箭修改本地响应拦截)
+#!homepage=https://maleftt.medpic.eu.cc
 
+[Script]
+iOS Location Spoofer = type=http-response,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$,requires-body=1,binary-body-mode=1,max-size=1048576,timeout=10,script-path=https://maleftt.medpic.eu.cc/location-spoofer.js,argument=mode=response&debug=false
+iLS Settings = type=http-request,pattern=^https?:\/\/gs-loc(?:-cn)?\.apple\.com\/ils-settings\/,requires-body=1,max-size=1048576,timeout=10,script-path=https://maleftt.medpic.eu.cc/location-settings.js,script-echo-response=true
 [MITM]
 hostname = %APPEND% gs-loc.apple.com, gs-loc-cn.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com`;
 }
