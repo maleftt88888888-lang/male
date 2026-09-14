@@ -1,5 +1,6 @@
 export function getLandingHtml(origin) {
-  const srUrl = origin + '/ios-location-spoofer.sgmodule';
+  const baseUrl = origin && origin !== 'undefined' ? origin : '';
+  const srUrl = baseUrl + '/ios-location-spoofer.sgmodule';
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -30,6 +31,16 @@ body {
 .header h1 { font-size:22px; font-weight:800; color:var(--txt); letter-spacing:-.3px; }
 .header p { font-size:13px; color:var(--muted); margin-top:6px; }
 
+.section-title {
+  font-size:16px; font-weight:700; color:var(--txt); margin-bottom:6px;
+  display:flex; align-items:center; gap:8px;
+}
+.section-title::before {
+  content:''; display:inline-block; width:4px; height:16px;
+  background:var(--green); border-radius:2px;
+}
+.section-desc { font-size:13px; color:var(--muted); margin-bottom:14px; }
+
 .card {
   background:linear-gradient(180deg,rgba(25,30,40,.72),rgba(18,22,29,.72));
   -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
@@ -37,42 +48,31 @@ body {
   margin-bottom:16px; box-shadow:0 8px 28px rgba(0,0,0,.34);
 }
 
+.notice-card {
+  background:linear-gradient(180deg,rgba(25,30,40,.72),rgba(18,22,29,.72));
+  -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
+  border:1px solid var(--line); border-left:4px solid var(--cyan);
+  border-radius:14px; padding:16px; font-size:13px; line-height:1.6;
+  color:var(--muted); margin-bottom:20px;
+}
+
 .btn-primary {
   display:block; width:100%; padding:14px; text-align:center;
   background:linear-gradient(135deg,var(--cyan),var(--cyan2));
   color:#022a2d; font-size:15px; font-weight:700; text-decoration:none;
   border-radius:12px; box-shadow:0 6px 18px rgba(23,195,207,.28);
-  transition:all .15s; margin-bottom:12px;
+  transition:all .15s;
 }
 .btn-primary:active { filter:brightness(1.12); transform:scale(.98); }
 
-.copy-box { display:flex; gap:8px; align-items:center; }
-.copy-box input {
-  flex:1; padding:10px 12px; background:var(--inset); border:1px solid var(--line);
-  border-radius:10px; font-family:"SF Mono",ui-monospace,monospace; font-size:12px;
-  color:var(--mono); outline:none; min-width:0;
-}
-.btn-copy {
-  padding:10px 16px; background:var(--card2); border:1px solid var(--line);
-  color:var(--txt); font-size:13px; font-weight:600; border-radius:10px; cursor:pointer;
-}
-.btn-copy:active { background:#2a3140; }
-
-.btn-map {
+.btn-green-map {
   display:block; width:100%; padding:14px; text-align:center;
-  background:var(--card2); border:1px solid var(--line);
-  color:var(--txt); font-size:15px; font-weight:700; text-decoration:none;
-  border-radius:12px; transition:all .15s;
+  background:linear-gradient(135deg, #10b981, #059669);
+  color:#fff; font-size:15px; font-weight:700; text-decoration:none;
+  border-radius:12px; box-shadow:0 6px 18px rgba(16,185,129,.28);
+  transition:all .15s; margin-bottom:24px;
 }
-.btn-map:active { background:#2a3140; transform:scale(.98); }
-
-.toast {
-  position:fixed; top:20px; left:50%; transform:translateX(-50%);
-  background:rgba(8,10,14,.92); border:1px solid var(--line); color:#fff;
-  padding:10px 20px; border-radius:20px; font-size:13px; opacity:0;
-  transition:opacity .3s; pointer-events:none; z-index:9999;
-}
-.toast.show { opacity:1; }
+.btn-green-map:active { filter:brightness(1.12); transform:scale(.98); }
 </style>
 </head>
 <body>
@@ -83,73 +83,24 @@ body {
     <p>模块管理 & 地图选点面板</p>
   </div>
 
-  <div class="card">
-    <a class="btn-primary" href="shadowrocket://config/add/remote?url=${encodeURIComponent(srUrl)}">一键导入 Shadowrocket</a>
-    <div class="copy-box">
-      <input id="srUrl" value="${srUrl}" readonly />
-      <button class="btn-copy" onclick="copyText('srUrl', this)">复制</button>
-    </div>
+  <a class="btn-green-map" href="/page">🗺️ 进入选点网页</a>
+
+  <div class="section-title">安装模块</div>
+  <div class="section-desc">选你的代理客户端，点「一键导入」直接装；或复制手动添加。</div>
+
+  <div class="notice-card">
+    📍 生效前提：① 代理 App 已连接（开关/引擎打开、非「直连」模式）；② 开启 HTTPS 解密 (MITM) 并信任证书；③ 装好对应客户端的模块。之后打开选点页选位置、点「储存到设备」即可生效。iOS 26+ 切换后可能需重启一次设备清缓存。
   </div>
 
   <div class="card">
-    <div class="copy-box">
-      <input id="srUrl2" value="${srUrl}" readonly />
-      <button class="btn-copy" onclick="copyText('srUrl2', this)">复制</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="copy-box">
-      <input id="lnUrl" value="${origin}/ios-location-spoofer.lnplugin" readonly />
-      <button class="btn-copy" onclick="copyText('lnUrl', this)">复制</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="copy-box">
-      <input id="stUrl" value="${origin}/ios-location-spoofer.stoverride" readonly />
-      <button class="btn-copy" onclick="copyText('stUrl', this)">复制</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="copy-box">
-      <input id="qxUrl" value="${origin}/ios-location-spoofer.snippet" readonly />
-      <button class="btn-copy" onclick="copyText('qxUrl', this)">复制</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="copy-box">
-      <input id="egUrl" value="${srUrl}" readonly />
-      <button class="btn-copy" onclick="copyText('egUrl', this)">复制</button>
-    </div>
-  </div>
-
-  <div style="margin-top:20px;">
-    <a class="btn-map" href="/page">打开地图选点界面 →</a>
+    <a class="btn-primary" id="srBtn" href="#">一键导入 Shadowrocket</a>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
-
 <script>
-function copyText(id, btn) {
-  var input = document.getElementById(id);
-  input.select();
-  navigator.clipboard.writeText(input.value).then(function() {
-    var orig = btn.textContent;
-    btn.textContent = '已复制';
-    toast('已复制');
-    setTimeout(function() { btn.textContent = orig; }, 1500);
-  });
-}
-function toast(msg) {
-  var el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(function() { el.classList.remove('show'); }, 2000);
-}
+var base = "${baseUrl}" || window.location.origin;
+var fullModuleUrl = base + '/ios-location-spoofer.sgmodule';
+document.getElementById('srBtn').href = 'shadowrocket://config/add/remote?url=' + encodeURIComponent(fullModuleUrl);
 </script>
 </body>
 </html>`;
