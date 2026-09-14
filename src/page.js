@@ -236,8 +236,8 @@ body {
 </div>
 
 <script>
-var SAVE_API = 'https://gs-loc.apple.com/ils-settings/save';
-var ACTIVE_API = 'https://gs-loc.apple.com/ils-settings/active';
+var SAVE_API = '/ils-settings/save';
+var ACTIVE_API = '/ils-settings/active';
 var PARSE_API = '/api/parse';
 var ELEV_API = 'https://api.open-meteo.com/v1/elevation';
 var FAV_KEY = 'ils_favorites';
@@ -479,7 +479,7 @@ function locateMe() {
       setTarget(pos.coords.latitude, pos.coords.longitude);
       toast(t('got_loc'));
     },
-    function(err){ toast(t('loc_failed') + err.message); },
+    function(err){ toast((err.message || 'Location error')); },
     { enableHighAccuracy: true, timeout: 10000 }
   );
 }
@@ -587,66 +587,39 @@ function searchPlace() {
       });
     })
     .catch(function(){
-      toast(t('search_failed'));
-      resBox.innerHTML = '';
+      resBox.innerHTML = '<div style="font-size:12px;color:var(--red);text-align:center;padding:12px;">' + t('search_failed') + '</div>';
     });
 }
 
 function getFavs() {
-  try { return JSON.parse(localStorage.getItem(FAV_KEY)) || []; } catch(e) { return []; }
+  try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch(e) { return []; }
 }
-function saveFavs(arr) {
-  try { localStorage.setItem(FAV_KEY, JSON.stringify(arr)); } catch(e) {}
+function saveFavs(list) {
+  try { localStorage.setItem(FAV_KEY, JSON.stringify(list)); } catch(e) {}
 }
-
 function renderFavs() {
   var list = getFavs();
   var box = document.getElementById('favList');
   var clearBtn = document.getElementById('clearAllBtn');
-  box.innerHTML = '';
-
-  if (list.length === 0) {
+  clearBtn.style.display = list.length ? 'block' : 'none';
+  if (!list.length) {
     box.innerHTML = '<div class="fav-empty">' + t('fav_empty') + '</div>';
-    clearBtn.style.display = 'none';
     return;
   }
-  clearBtn.style.display = 'block';
-
+  box.innerHTML = '';
   list.forEach(function(item, idx){
-    var div = document.createElement('div');
-    div.className = 'fav-item';
-    div.innerHTML = '<div class="fav-info"><div class="fav-name">' + item.name + '</div><div class="fav-coords">' + item.lat.toFixed(6) + ', ' + item.lon.toFixed(6) + '</div></div>' +
-                    '<button class="fav-del" title="' + t('del') + '">&times;</button>';
-
-    div.querySelector('.fav-info').onclick = function(){ setTarget(item.lat, item.lon); };
-    div.querySelector('.fav-del').onclick = function(e){
-      e.stopPropagation();
-      deleteFav(idx);
-    };
-    box.appendChild(div);
+    var el = document.createElement('div');
+    el.className = 'fav-item';
+    el.innerHTML = '<div class="fav-info" onclick="loadFav(' + idx + ')"><div class="fav-name">' + esc(item.name) + '</div><div class="fav-coords">' + item.lat.toFixed(6) + ', ' + item.lon.toFixed(6) + '</div></div><button class="fav-del" onclick="delFav(event, ' + idx + ')">×</button>';
+    box.appendChild(el);
   });
 }
-
-function addFav() {
-  if (!selected) return toast(t('pick_first'));
-  document.getElementById('favModalCoords').textContent = lat.toFixed(6) + ', ' + lon.toFixed(6);
-  document.getElementById('favNameInput').value = '';
-  document.getElementById('favModal').classList.add('show');
-}
-function closeFavModal() {
-  document.getElementById('favModal').classList.remove('show');
-}
-function confirmFav() {
-  var name = document.getElementById('favNameInput').value.trim();
-  if (!name) return toast(t('enter_label'));
+function loadFav(idx) {
   var list = getFavs();
-  list.unshift({ name: name, lat: lat, lon: lon });
-  saveFavs(list);
-  closeFavModal();
-  renderFavs();
-  toast('已添加到收藏');
+  if (list[idx]) setTarget(list[idx].lat, list[idx].lon);
 }
-function deleteFav(idx) {
+function delFav(e, idx) {
+  e.stopPropagation();
   var list = getFavs();
   list.splice(idx, 1);
   saveFavs(list);
@@ -656,12 +629,31 @@ function clearAllFav() {
   if (!confirm(t('clear_fav_confirm'))) return;
   saveFavs([]);
   renderFavs();
+  toast(t('all_cleared'));
 }
+function addFav() {
+  if (!selected) return toast(t('pick_first'));
+  document.getElementById('favModalCoords').textContent = lat.toFixed(6) + ', ' + lon.toFixed(6);
+  document.getElementById('favNameInput').value = '';
+  document.getElementById('favModal').classList.add('show');
+  setTimeout(function(){ document.getElementById('favNameInput').focus(); }, 100);
+}
+function closeFavModal() {
+  document.getElementById('favModal').classList.remove('show');
+}
+function confirmFav() {
+  var name = document.getElementById('favNameInput').value.trim() || ('Loc ' + lat.toFixed(4) + ', ' + lon.toFixed(4));
+  var list = getFavs();
+  list.unshift({ name: name, lat: lat, lon: lon });
+  saveFavs(list);
+  renderFavs();
+  closeFavModal();
+  toast('已收藏');
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
-window.onload = function() {
-  applyI18n();
-  queryActive();
-};
+applyI18n();
+queryActive();
 </script>
 </body>
 </html>`;
